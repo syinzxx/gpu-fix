@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Local dev uses SQLite. For production Postgres, change provider to
+// "postgresql" and set DATABASE_URL accordingly — the schema is compatible.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles: ADMIN | RECEPTIONIST | TECHNICIAN (string — SQLite has no enums)
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String
+  role           String        @default("TECHNICIAN")
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  assignedTickets Ticket[]     @relation("AssignedTech")
+  createdTickets Ticket[]      @relation("CreatedBy")
+  events         TicketEvent[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  whatsapp  String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  tickets   Ticket[]
+}
+
+// Status flow:
+// RECEIVED -> DIAGNOSING -> QUOTE_SENT -> QUOTE_APPROVED | QUOTE_REJECTED
+//   -> IN_REPAIR -> READY_FOR_PICKUP -> CLOSED
+model Ticket {
+  id           String        @id @default(cuid())
+  code         String        @unique // short public tracking code e.g. GPU-4F7K2
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  deviceType   String        @default("GPU") // GPU | LAPTOP | CONSOLE | PC | OTHER
+  brand        String
+  model        String
+  serialNumber String?
+  accessories  String?
+  issue        String
+  status       String        @default("RECEIVED")
+  priority     String        @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  etaDate      DateTime?
+  quoteAmount  Float?
+  laborCost    Float         @default(0)
+  assignedToId String?
+  assignedTo   User?         @relation("AssignedTech", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User          @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  closedAt     DateTime?
+  events       TicketEvent[]
+  partsUsed    TicketPart[]
+  invoice      Invoice?
+  whatsappLogs WhatsappLog[]
+
+  @@index([status])
+  @@index([customerId])
+}
+
+// Timeline entries: STATUS_CHANGE | NOTE | ASSIGNMENT | CREATED
+model TicketEvent {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  type        String
+  fromStatus  String?
+  toStatus    String?
+  note        String?
+  isPublic    Boolean  @default(false)
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model Supplier {
+  id             String          @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  parts          Part[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model Part {
+  id                String              @id @default(cuid())
+  sku               String              @unique
+  name              String
+  category          String              @default("OTHER") // FAN | VRM | CAPACITOR | MEMORY | CONNECTOR | THERMAL | PCB | OTHER
+  quantity          Int                 @default(0)
+  lowStockThreshold Int                 @default(3)
+  costPrice         Float               @default(0)
+  sellPrice         Float               @default(0)
+  supplierId        String?
+  supplier          Supplier?           @relation(fields: [supplierId], references: [id])
+  createdAt         DateTime            @default(now())
+  ticketParts       TicketPart[]
+  purchaseOrderItems PurchaseOrderItem[]
+}
+
+// Parts consumed by a repair. Stock decrements when added.
+model TicketPart {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id])
+  quantity  Int
+  unitPrice Float // price charged to customer (snapshot of sellPrice)
+  unitCost  Float // cost snapshot at time of use
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// Status: PENDING | RECEIVED | CANCELLED. Receiving restocks parts.
+model PurchaseOrder {
+  id         String              @id @default(cuid())
+  number     String              @unique
+  supplierId String
+  supplier   Supplier            @relation(fields: [supplierId], references: [id])
+  status     String              @default("PENDING")
+  notes      String?
+  createdAt  DateTime            @default(now())
+  receivedAt DateTime?
+  items      PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  partId          String
+  part            Part          @relation(fields: [partId], references: [id])
+  quantity        Int
+  unitCost        Float
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  ticketId    String   @unique
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  laborAmount Float
+  partsAmount Float
+  discount    Float    @default(0)
+  total       Float
+  issuedAt    DateTime @default(now())
+}
+
+// Status: SENT | FAILED | SKIPPED (skipped = WhatsApp not configured, manual send)
+model WhatsappLog {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  to        String
+  body      String
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+}

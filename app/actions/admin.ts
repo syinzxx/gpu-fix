@@ -53,5 +53,29 @@ export async function updateCustomer(formData: FormData) {
   });
 
   revalidatePath("/dashboard/customers");
-  redirect("/dashboard/customers");
+  revalidatePath(`/dashboard/customers/${id}`);
+  redirect(`/dashboard/customers/${id}`);
+}
+
+export async function saveSettings(formData: FormData) {
+  await requireRole("ADMIN");
+
+  await db.settings.upsert({
+    where: { id: "global" },
+    create: {
+      id: "global",
+      shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
+      shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
+      shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
+    },
+    update: {
+      shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
+      shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
+      shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
+    },
+  });
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/settings");
 }

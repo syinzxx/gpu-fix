@@ -61,9 +61,12 @@ model Ticket {
   updatedAt    DateTime      @updatedAt
   closedAt     DateTime?
   events       TicketEvent[]
-  partsUsed    TicketPart[]
-  invoice      Invoice?
-  whatsappLogs WhatsappLog[]
+  partsUsed        TicketPart[]
+  invoice          Invoice?
+  whatsappLogs     WhatsappLog[]
+  warrantyDays     Int?
+  isWarrantyReturn Boolean      @default(false)
+  warrantyTicketId String?
 
   @@index([status])
   @@index([customerId])
@@ -164,6 +167,13 @@ model Invoice {
 }
 
 // Status: SENT | FAILED | SKIPPED (skipped = WhatsApp not configured, manual send)
+model Settings {
+  id          String @id @default("global")
+  shopName    String @default("GPU Fix Shop")
+  shopAddress String @default("")
+  shopPhone   String @default("")
+}
+
 model WhatsappLog {
   id        String   @id @default(cuid())
   ticketId  String

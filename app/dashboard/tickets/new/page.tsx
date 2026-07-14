@@ -95,6 +95,20 @@ export default async function NewTicketPage() {
                 ))}
               </Select>
             </div>
+            <div className="flex items-start gap-2 sm:col-span-3">
+              <input type="checkbox" id="isWarrantyReturn" name="isWarrantyReturn"
+                className="mt-0.5 accent-violet-600" />
+              <div>
+                <label htmlFor="isWarrantyReturn" className="text-sm font-medium text-slate-700 cursor-pointer">
+                  Warranty return
+                </label>
+                <p className="text-xs text-slate-400">Check if this device is being returned under warranty from a previous repair.</p>
+              </div>
+            </div>
+            <div className="sm:col-span-3">
+              <Label htmlFor="warrantyTicketId">Original ticket code (if warranty return)</Label>
+              <Input id="warrantyTicketId" name="warrantyTicketId" placeholder="e.g. GPU-4F7K2" />
+            </div>
           </div>
         </Card>
 

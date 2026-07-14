@@ -47,6 +47,8 @@ export async function createTicket(formData: FormData) {
 
   const code = await uniqueTicketCode();
   const etaRaw = formData.get("etaDate") as string;
+  const isWarrantyReturn = formData.get("isWarrantyReturn") === "on";
+  const warrantyTicketId = (formData.get("warrantyTicketId") as string)?.trim() || null;
 
   const ticket = await db.ticket.create({
     data: {
@@ -61,6 +63,8 @@ export async function createTicket(formData: FormData) {
       priority: (formData.get("priority") as string) || "NORMAL",
       etaDate: etaRaw ? new Date(etaRaw) : null,
       assignedToId: (formData.get("assignedToId") as string) || null,
+      isWarrantyReturn,
+      warrantyTicketId,
       createdById: user.id,
       events: {
         create: {
@@ -250,6 +254,45 @@ export async function removePartFromTicket(formData: FormData) {
   });
 
   revalidatePath("/dashboard/inventory");
+}
+
+export async function resendWhatsapp(formData: FormData) {
+  await requireUser();
+  const ticketId = formData.get("ticketId") as string;
+
+  const ticket = await db.ticket.findUniqueOrThrow({
+    where: { id: ticketId },
+    include: { customer: true },
+  });
+
+  await sendWhatsapp({
+    ticketId,
+    to: ticket.customer.whatsapp,
+    body: statusMessage({
+      customerName: ticket.customer.name,
+      code: ticket.code,
+      status: ticket.status as TicketStatus,
+      device: `${ticket.brand} ${ticket.model}`,
+      quoteAmount: ticket.quoteAmount,
+      eta: ticket.etaDate ? fmtDate(ticket.etaDate) : null,
+    }),
+  });
+
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+}
+
+export async function setWarranty(formData: FormData) {
+  await requireRole("ADMIN", "RECEPTIONIST");
+  const ticketId = formData.get("ticketId") as string;
+  const raw = formData.get("warrantyDays") as string;
+  const warrantyDays = raw ? parseInt(raw, 10) : null;
+
+  await db.ticket.update({
+    where: { id: ticketId },
+    data: { warrantyDays: warrantyDays && !isNaN(warrantyDays) ? warrantyDays : null },
+  });
+
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
 }
 
 export async function createInvoice(formData: FormData) {

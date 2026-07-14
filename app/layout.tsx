@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { getLocale } from "@/lib/locale";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -22,14 +23,16 @@ export const metadata: Metadata = {
   description: "GPU repair shop — ticketing, tracking, and inventory",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${bricolage.variable} ${manrope.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

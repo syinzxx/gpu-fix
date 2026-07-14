@@ -47,7 +47,7 @@ export default async function CustomersPage({
               {customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
                   <Td>
-                    <Link href={`/dashboard/tickets?q=${encodeURIComponent(c.phone)}`} className="font-semibold text-violet-700 hover:underline">
+                    <Link href={`/dashboard/customers/${c.id}`} className="font-semibold text-violet-700 hover:underline">
                       {c.name}
                     </Link>
                   </Td>

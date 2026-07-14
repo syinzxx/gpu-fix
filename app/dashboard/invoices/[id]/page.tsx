@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { PrintButton } from "@/components/print-button";
 import { fmtDate, money } from "@/lib/utils";
+import { getSettings } from "@/lib/settings";
+import { getT } from "@/lib/locale";
 
 export default async function InvoicePage({
   params,
@@ -11,17 +13,21 @@ export default async function InvoicePage({
 }) {
   const { id } = await params;
 
-  const invoice = await db.invoice.findUnique({
-    where: { id },
-    include: {
-      ticket: {
-        include: {
-          customer: true,
-          partsUsed: { include: { part: true } },
+  const [invoice, settings, t] = await Promise.all([
+    db.invoice.findUnique({
+      where: { id },
+      include: {
+        ticket: {
+          include: {
+            customer: true,
+            partsUsed: { include: { part: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    getSettings(),
+    getT(),
+  ]);
   if (!invoice) notFound();
 
   const { ticket } = invoice;
@@ -30,7 +36,7 @@ export default async function InvoicePage({
     <div className="mx-auto max-w-2xl space-y-5">
       <div className="flex items-center justify-between print:hidden">
         <Link href={`/dashboard/tickets/${ticket.id}`} className="text-sm text-violet-700 hover:underline">
-          ← Back to ticket {ticket.code}
+          {t.backToTicket} {ticket.code}
         </Link>
         <PrintButton />
       </div>
@@ -40,35 +46,35 @@ export default async function InvoicePage({
         <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6">
           <div>
             <h1 className="font-display text-3xl font-bold uppercase tracking-wide text-slate-900">
-              {process.env.SHOP_NAME ?? "GPU Fix Shop"}
+              {settings.shopName}
             </h1>
-            {process.env.SHOP_ADDRESS && (
-              <p className="mt-1 text-xs text-slate-500">{process.env.SHOP_ADDRESS}</p>
+            {settings.shopAddress && (
+              <p className="mt-1 text-xs text-slate-500">{settings.shopAddress}</p>
             )}
-            {process.env.SHOP_PHONE && (
-              <p className="text-xs text-slate-500">{process.env.SHOP_PHONE}</p>
+            {settings.shopPhone && (
+              <p className="text-xs text-slate-500">{settings.shopPhone}</p>
             )}
           </div>
           <div className="text-right">
             <p className="font-mono text-lg font-semibold tracking-wider text-slate-900">{invoice.number}</p>
-            <p className="font-mono text-[11px] text-slate-500">Issued {fmtDate(invoice.issuedAt)}</p>
+            <p className="font-mono text-[11px] text-slate-500">{t.issuedOn} {fmtDate(invoice.issuedAt)}</p>
           </div>
         </div>
 
         {/* Parties */}
         <div className="grid grid-cols-2 gap-6 py-6 text-sm">
           <div>
-            <p className="silk-label text-slate-400">Billed to</p>
+            <p className="silk-label text-slate-400">{t.billedTo}</p>
             <p className="mt-1 font-medium text-slate-900">{ticket.customer.name}</p>
             <p className="text-slate-500">{ticket.customer.phone}</p>
           </div>
           <div>
-            <p className="silk-label text-slate-400">Repair</p>
+            <p className="silk-label text-slate-400">{t.repair}</p>
             <p className="mt-1 font-medium text-slate-900">
               {ticket.brand} {ticket.model}
             </p>
             <p className="text-slate-500">
-              Ticket {ticket.code}
+              {t.tickets.replace(/\p{L}+/u, "Ticket")} {ticket.code}
               {ticket.serialNumber && ` · SN ${ticket.serialNumber}`}
             </p>
           </div>
@@ -78,55 +84,55 @@ export default async function InvoicePage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left silk-label text-slate-400">
-              <th className="pb-2">Item</th>
-              <th className="pb-2 text-center">Qty</th>
-              <th className="pb-2 text-right">Unit</th>
-              <th className="pb-2 text-right">Amount</th>
+              <th className="pb-2">{t.item}</th>
+              <th className="pb-2 text-center">{t.qty}</th>
+              <th className="pb-2 text-end">{t.unit}</th>
+              <th className="pb-2 text-end">{t.amount}</th>
             </tr>
           </thead>
           <tbody>
             {invoice.laborAmount > 0 && (
               <tr className="border-b border-slate-100">
-                <td className="py-2.5">Repair labor</td>
+                <td className="py-2.5">{t.repairLabor}</td>
                 <td className="py-2.5 text-center">1</td>
-                <td className="py-2.5 text-right">{money(invoice.laborAmount)}</td>
-                <td className="py-2.5 text-right">{money(invoice.laborAmount)}</td>
+                <td className="py-2.5 text-end">{money(invoice.laborAmount)}</td>
+                <td className="py-2.5 text-end">{money(invoice.laborAmount)}</td>
               </tr>
             )}
             {ticket.partsUsed.map((tp) => (
               <tr key={tp.id} className="border-b border-slate-100">
                 <td className="py-2.5">
                   {tp.part.name}
-                  <span className="ml-1 text-xs text-slate-400">({tp.part.sku})</span>
+                  <span className="ms-1 text-xs text-slate-400">({tp.part.sku})</span>
                 </td>
                 <td className="py-2.5 text-center">{tp.quantity}</td>
-                <td className="py-2.5 text-right">{money(tp.unitPrice)}</td>
-                <td className="py-2.5 text-right">{money(tp.unitPrice * tp.quantity)}</td>
+                <td className="py-2.5 text-end">{money(tp.unitPrice)}</td>
+                <td className="py-2.5 text-end">{money(tp.unitPrice * tp.quantity)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
         {/* Totals */}
-        <div className="ml-auto mt-4 w-56 space-y-1.5 text-sm">
+        <div className="ms-auto mt-4 w-56 space-y-1.5 text-sm">
           <div className="flex justify-between text-slate-500">
-            <span>Subtotal</span>
+            <span>{t.subtotal}</span>
             <span>{money(invoice.laborAmount + invoice.partsAmount)}</span>
           </div>
           {invoice.discount > 0 && (
             <div className="flex justify-between text-emerald-700">
-              <span>Discount</span>
+              <span>{t.discount}</span>
               <span>−{money(invoice.discount)}</span>
             </div>
           )}
           <div className="flex justify-between border-t-2 border-slate-900 pt-1.5 text-base font-bold text-slate-900">
-            <span>Total due</span>
+            <span>{t.totalDue}</span>
             <span className="font-mono">{money(invoice.total)}</span>
           </div>
         </div>
 
         <p className="mt-8 border-t border-slate-100 pt-4 text-center text-xs text-slate-400">
-          Payment due at pickup. Thank you for your business!
+          {t.paymentDue}
         </p>
       </div>
     </div>

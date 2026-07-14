@@ -15,6 +15,8 @@ import {
   addPartToTicket,
   removePartFromTicket,
   createInvoice,
+  resendWhatsapp,
+  setWarranty,
 } from "@/app/actions/tickets";
 import { Button, Input, Label, Select, Textarea, Card, CardHeader, Table, Th, Td, Badge, EmptyState } from "@/components/ui";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
@@ -56,6 +58,12 @@ export default async function TicketDetailPage({
   const dateInputValue = ticket.etaDate ? new Date(ticket.etaDate).toISOString().slice(0, 10) : "";
   const isActive = ACTIVE_STATUSES.includes(ticket.status as TicketStatus);
 
+  const warrantyExpiry =
+    ticket.warrantyDays && ticket.closedAt
+      ? new Date(ticket.closedAt.getTime() + ticket.warrantyDays * 86400_000)
+      : null;
+  const underWarranty = warrantyExpiry ? warrantyExpiry > new Date() : false;
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -65,11 +73,17 @@ export default async function TicketDetailPage({
             <h1 className="font-mono text-3xl font-semibold tracking-[0.12em] text-slate-900">{ticket.code}</h1>
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            {ticket.isWarrantyReturn && (
+              <Badge className="bg-amber-100 text-amber-700">warranty return</Badge>
+            )}
           </div>
           <p className="mt-1 text-sm text-slate-500">
             {ticket.deviceType} · {ticket.brand} {ticket.model}
             {ticket.serialNumber && ` · SN ${ticket.serialNumber}`}
             {isActive && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} in queue</span></>}
+            {ticket.isWarrantyReturn && ticket.warrantyTicketId && (
+              <> · <span className="text-amber-600">ref: {ticket.warrantyTicketId}</span></>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -280,6 +294,25 @@ export default async function TicketDetailPage({
           </Card>
 
           <Card>
+            <CardHeader title="Warranty" />
+            <form action={setWarranty} className="space-y-3 p-5">
+              <input type="hidden" name="ticketId" value={ticket.id} />
+              <div>
+                <Label>Warranty period (days)</Label>
+                <Input name="warrantyDays" type="number" min="0" step="1"
+                  defaultValue={ticket.warrantyDays ?? ""} placeholder="e.g. 90" />
+                <p className="mt-1 text-xs text-slate-400">Leave empty for no warranty.</p>
+              </div>
+              {warrantyExpiry && (
+                <p className={`rounded-lg px-3 py-2 text-xs font-semibold ${underWarranty ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {underWarranty ? "Under warranty until" : "Warranty expired"} {fmtDate(warrantyExpiry)}
+                </p>
+              )}
+              <Button type="submit" variant="secondary" className="w-full">Save</Button>
+            </form>
+          </Card>
+
+          <Card>
             <CardHeader title="Billing" />
             <div className="space-y-2 p-5 text-sm">
               {ticket.quoteAmount != null && (
@@ -314,6 +347,11 @@ export default async function TicketDetailPage({
           {ticket.whatsappLogs.length > 0 && (
             <Card>
               <CardHeader title="WhatsApp" />
+              <form action={resendWhatsapp} className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <input type="hidden" name="ticketId" value={ticket.id} />
+                <p className="text-xs text-slate-400">Send current status to customer</p>
+                <Button type="submit" size="sm" variant="secondary">Resend</Button>
+              </form>
               <ul className="divide-y divide-slate-100">
                 {ticket.whatsappLogs.map((w) => (
                   <li key={w.id} className="p-4 text-xs">

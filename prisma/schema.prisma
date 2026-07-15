@@ -175,12 +175,13 @@ model Settings {
 }
 
 model WhatsappLog {
-  id        String   @id @default(cuid())
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  to        String
-  body      String
-  status    String
-  error     String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  to          String
+  body        String
+  status      String
+  error       String?
+  waMessageId String?  // Meta Cloud API message ID, used for webhook status correlation
+  createdAt   DateTime @default(now())
 }

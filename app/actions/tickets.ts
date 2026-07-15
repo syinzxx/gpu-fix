@@ -9,6 +9,27 @@ import { fmtDate } from "@/lib/utils";
 import { STATUS_FLOW, statusMessage, type TicketStatus } from "@/lib/constants";
 import { sendWhatsapp } from "@/lib/whatsapp";
 
+/** Builds the per-status single-sentence line used in the ticket_update template. */
+function buildStatusLine(opts: {
+  status: TicketStatus;
+  device: string;
+  quoteAmount?: number | null;
+  eta?: string | null;
+}): string {
+  const { status, device, quoteAmount, eta } = opts;
+  const lines: Record<TicketStatus, string> = {
+    RECEIVED: `We received your ${device}`,
+    DIAGNOSING: `Your ${device} is now being diagnosed`,
+    QUOTE_SENT: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
+    QUOTE_APPROVED: `Quote approved — your ${device} is queued for repair`,
+    QUOTE_REJECTED: `Quote declined. Your ${device} will be prepared for return`,
+    IN_REPAIR: `Your ${device} is now being repaired${eta ? `. ETA: ${eta}` : ""}`,
+    READY_FOR_PICKUP: `Your ${device} is ready for pickup!`,
+    CLOSED: `Ticket closed. Thank you for choosing us!`,
+  };
+  return lines[status];
+}
+
 async function uniqueTicketCode(): Promise<string> {
   for (let i = 0; i < 10; i++) {
     const code = generateTicketCode();
@@ -77,6 +98,7 @@ export async function createTicket(formData: FormData) {
     },
   });
 
+  const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
   await sendWhatsapp({
     ticketId: ticket.id,
     to: customer.whatsapp,
@@ -86,6 +108,12 @@ export async function createTicket(formData: FormData) {
       status: "RECEIVED",
       device: `${brand} ${model}`,
     }),
+    templateParams: {
+      customerName: customer.name,
+      code: ticket.code,
+      statusLine: buildStatusLine({ status: "RECEIVED", device: `${brand} ${model}` }),
+      trackUrl,
+    },
   });
 
   revalidatePath("/dashboard/tickets");
@@ -130,6 +158,9 @@ export async function changeStatus(formData: FormData) {
     },
   });
 
+  const changeStatusTrackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
+  const changeStatusQuoteAmount = toStatus === "QUOTE_SENT" ? parseFloat(quoteRaw!) : ticket.quoteAmount;
+  const changeStatusEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
   await sendWhatsapp({
     ticketId,
     to: ticket.customer.whatsapp,
@@ -138,9 +169,20 @@ export async function changeStatus(formData: FormData) {
       code: ticket.code,
       status: toStatus,
       device: `${ticket.brand} ${ticket.model}`,
-      quoteAmount: toStatus === "QUOTE_SENT" ? parseFloat(quoteRaw!) : ticket.quoteAmount,
-      eta: ticket.etaDate ? fmtDate(ticket.etaDate) : null,
+      quoteAmount: changeStatusQuoteAmount,
+      eta: changeStatusEta,
     }),
+    templateParams: {
+      customerName: ticket.customer.name,
+      code: ticket.code,
+      statusLine: buildStatusLine({
+        status: toStatus,
+        device: `${ticket.brand} ${ticket.model}`,
+        quoteAmount: changeStatusQuoteAmount,
+        eta: changeStatusEta,
+      }),
+      trackUrl: changeStatusTrackUrl,
+    },
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -265,6 +307,8 @@ export async function resendWhatsapp(formData: FormData) {
     include: { customer: true },
   });
 
+  const resendTrackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
+  const resendEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
   await sendWhatsapp({
     ticketId,
     to: ticket.customer.whatsapp,
@@ -274,8 +318,19 @@ export async function resendWhatsapp(formData: FormData) {
       status: ticket.status as TicketStatus,
       device: `${ticket.brand} ${ticket.model}`,
       quoteAmount: ticket.quoteAmount,
-      eta: ticket.etaDate ? fmtDate(ticket.etaDate) : null,
+      eta: resendEta,
     }),
+    templateParams: {
+      customerName: ticket.customer.name,
+      code: ticket.code,
+      statusLine: buildStatusLine({
+        status: ticket.status as TicketStatus,
+        device: `${ticket.brand} ${ticket.model}`,
+        quoteAmount: ticket.quoteAmount,
+        eta: resendEta,
+      }),
+      trackUrl: resendTrackUrl,
+    },
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);

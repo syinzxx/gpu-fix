@@ -1,56 +1,96 @@
 import { db } from "@/lib/db";
+import { normalizePhone } from "@/lib/phone";
 
 /**
- * Sends a WhatsApp message via the Twilio WhatsApp Business API.
- * If Twilio env vars are not configured, the message is logged with status
- * SKIPPED so staff can copy-paste it manually from the ticket page.
+ * Optional structured params for the ticket_update template.
+ * When provided, sends a WhatsApp template message via Meta Cloud API.
+ * When omitted, falls back to a free-text message (only works inside a
+ * 24-hour customer-initiated window).
+ */
+export interface WhatsappTemplateParams {
+  customerName: string;
+  code: string;
+  statusLine: string;
+  trackUrl: string;
+}
+
+/**
+ * Sends a WhatsApp message via the Meta WhatsApp Cloud API.
+ *
+ * If WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN are not set, the
+ * message is logged with status SKIPPED so staff can copy-paste it manually
+ * from the ticket page (same fallback behaviour as the previous Twilio impl).
+ *
+ * The optional `templateParams` argument drives the `ticket_update` template
+ * (4 variables: customerName, code, statusLine, trackUrl). When omitted, the
+ * function sends `body` as a free-form text message, which is only delivered
+ * if the customer initiated a conversation in the last 24 hours.
+ *
+ * NOTE: all three ticket actions (createTicket, changeStatus, resendWhatsapp)
+ * always pass `templateParams`, so they take the template path. The free-text
+ * branch is NOT dead code — it exists for ad-hoc/manual callers that pass only
+ * `body` (deliverable only inside an open 24h service window).
  */
 export async function sendWhatsapp(opts: {
   ticketId: string;
   to: string | null | undefined;
   body: string;
+  templateParams?: WhatsappTemplateParams;
 }): Promise<void> {
-  const { ticketId, to, body } = opts;
+  const { ticketId, body, templateParams } = opts;
+  const to = opts.to;
   if (!to) return;
 
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
-  if (!sid || !token || !from) {
+  if (!phoneNumberId || !accessToken) {
     await db.whatsappLog.create({
       data: { ticketId, to, body, status: "SKIPPED" },
     });
     return;
   }
 
+  // Normalize to E.164 for the Cloud API
+  const normalizedTo = normalizePhone(to);
+
+  // Build the message payload
+  const payload = templateParams
+    ? buildTemplatePayload(normalizedTo, templateParams)
+    : buildTextPayload(normalizedTo, body);
+
   try {
     const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
       {
         method: "POST",
         headers: {
-          Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
-        body: new URLSearchParams({
-          From: `whatsapp:${from}`,
-          To: `whatsapp:${to}`,
-          Body: body,
-        }),
+        body: JSON.stringify(payload),
       }
     );
 
     if (!res.ok) {
       const err = await res.text();
       await db.whatsappLog.create({
-        data: { ticketId, to, body, status: "FAILED", error: err.slice(0, 500) },
+        data: {
+          ticketId,
+          to,
+          body,
+          status: "FAILED",
+          error: err.slice(0, 500),
+        },
       });
       return;
     }
 
+    const json = (await res.json()) as { messages?: { id: string }[] };
+    const waMessageId = json?.messages?.[0]?.id ?? null;
+
     await db.whatsappLog.create({
-      data: { ticketId, to, body, status: "SENT" },
+      data: { ticketId, to, body, status: "SENT", waMessageId },
     });
   } catch (e) {
     await db.whatsappLog.create({
@@ -63,4 +103,40 @@ export async function sendWhatsapp(opts: {
       },
     });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Payload builders
+// ---------------------------------------------------------------------------
+
+function buildTemplatePayload(to: string, p: WhatsappTemplateParams) {
+  return {
+    messaging_product: "whatsapp",
+    to,
+    type: "template",
+    template: {
+      name: "ticket_update",
+      language: { code: "en" },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: p.customerName },
+            { type: "text", text: p.code },
+            { type: "text", text: p.statusLine },
+            { type: "text", text: p.trackUrl },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+function buildTextPayload(to: string, text: string) {
+  return {
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body: text },
+  };
 }

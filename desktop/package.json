@@ -1,0 +1,35 @@
+{
+  "name": "gpu-fix-desktop",
+  "version": "1.0.0",
+  "description": "GPU Fix Shop — desktop shell for Windows",
+  "author": "GPU Fix Shop",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.gpufixshop.desktop",
+    "productName": "GPU Fix Shop",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "GPU Fix Shop",
+      "runAfterFinish": true
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

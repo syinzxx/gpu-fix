@@ -46,4 +46,4 @@ prisma/dev.db*
 # desktop app build artifacts
 desktop/node_modules/
 desktop/dist/
-desktop/build/
+# note: desktop/build/ is electron-builder's resources dir (holds icon.ico source) — keep it tracked

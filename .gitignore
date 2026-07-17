@@ -42,3 +42,8 @@ next-env.d.ts
 
 # local sqlite database
 prisma/dev.db*
+
+# desktop app build artifacts
+desktop/node_modules/
+desktop/dist/
+desktop/build/

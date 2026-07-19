@@ -42,6 +42,7 @@ export function OrdersTabClient({
   parts: PartOption[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -55,6 +56,12 @@ export function OrdersTabClient({
       <div className="flex justify-end">
         <Button onClick={() => setIsOpen(true)}>+ New order</Button>
       </div>
+
+      {actionError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {actionError}
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <Card>
@@ -74,8 +81,13 @@ export function OrdersTabClient({
                       <>
                         <form
                           action={async (fd) => {
-                            await receivePurchaseOrder(fd);
-                            refresh();
+                            try {
+                              setActionError(null);
+                              await receivePurchaseOrder(fd);
+                              refresh();
+                            } catch (e) {
+                              setActionError(e instanceof Error ? e.message : "Failed to receive order");
+                            }
                           }}
                         >
                           <input type="hidden" name="id" value={po.id} />
@@ -83,8 +95,13 @@ export function OrdersTabClient({
                         </form>
                         <form
                           action={async (fd) => {
-                            await cancelPurchaseOrder(fd);
-                            refresh();
+                            try {
+                              setActionError(null);
+                              await cancelPurchaseOrder(fd);
+                              refresh();
+                            } catch (e) {
+                              setActionError(e instanceof Error ? e.message : "Failed to cancel order");
+                            }
                           }}
                         >
                           <input type="hidden" name="id" value={po.id} />

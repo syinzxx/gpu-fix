@@ -44,7 +44,7 @@ export function OrdersTabClient({
   const [isOpen, setIsOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const refresh = useCallback(
     () => startTransition(() => { router.refresh(); }),
@@ -91,7 +91,7 @@ export function OrdersTabClient({
                           }}
                         >
                           <input type="hidden" name="id" value={po.id} />
-                          <Button size="sm" type="submit">Receive → restock</Button>
+                          <Button size="sm" type="submit" disabled={isPending}>Receive → restock</Button>
                         </form>
                         <form
                           action={async (fd) => {
@@ -105,7 +105,7 @@ export function OrdersTabClient({
                           }}
                         >
                           <input type="hidden" name="id" value={po.id} />
-                          <Button size="sm" variant="danger" type="submit">Cancel</Button>
+                          <Button size="sm" variant="danger" type="submit" disabled={isPending}>Cancel</Button>
                         </form>
                       </>
                     )}

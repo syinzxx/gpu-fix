@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useTransition, useCallback } from "react";
+import { useEffect, useTransition, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -54,8 +54,11 @@ export function TicketSlideOver({
 
   const refresh = useCallback(
     () => startTransition(() => { router.refresh(); }),
-    [router]
+    [router, startTransition]
   );
+
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [noteKey, setNoteKey] = useState(0);
 
   const nextStatuses = STATUS_FLOW[ticket.status as TicketStatus] ?? [];
   const urgency = etaUrgency(ticket.etaDate);
@@ -157,9 +160,14 @@ export function TicketSlideOver({
                     <form
                       key={next}
                       action={async (fd) => {
-                        await changeStatus(fd);
-                        onClose();
-                        refresh();
+                        try {
+                          setActionError(null);
+                          await changeStatus(fd);
+                          onClose();
+                          refresh();
+                        } catch (e) {
+                          setActionError(e instanceof Error ? e.message : "Failed to update status");
+                        }
                       }}
                     >
                       <input type="hidden" name="ticketId" value={ticket.id} />
@@ -185,7 +193,15 @@ export function TicketSlideOver({
               Assigned technician
             </p>
             <form
-              action={async (fd) => { await assignTicket(fd); refresh(); }}
+              action={async (fd) => {
+                try {
+                  setActionError(null);
+                  await assignTicket(fd);
+                  refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Failed to assign technician");
+                }
+              }}
               className="flex gap-2"
             >
               <input type="hidden" name="ticketId" value={ticket.id} />
@@ -211,7 +227,15 @@ export function TicketSlideOver({
               ETA
             </p>
             <form
-              action={async (fd) => { await updateEta(fd); refresh(); }}
+              action={async (fd) => {
+                try {
+                  setActionError(null);
+                  await updateEta(fd);
+                  refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Failed to update ETA");
+                }
+              }}
               className="flex gap-2"
             >
               <input type="hidden" name="ticketId" value={ticket.id} />
@@ -245,7 +269,6 @@ export function TicketSlideOver({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="relative h-12 w-12 overflow-hidden rounded-lg ring-1 ring-slate-200"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- staff-only thumbnail strip */}
                     <img src={a.path} alt="" className="h-full w-full object-cover" />
@@ -260,14 +283,21 @@ export function TicketSlideOver({
                   <Link
                     href={`/dashboard/tickets/${ticket.id}`}
                     className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-violet-600 ring-1 ring-slate-200 hover:bg-slate-200"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     +{ticket.attachments.length - 4}
                   </Link>
                 )}
               </div>
             )}
-            <form action={async (fd) => { await uploadAttachment(fd); refresh(); }}>
+            <form action={async (fd) => {
+                try {
+                  setActionError(null);
+                  await uploadAttachment(fd);
+                  refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Failed to upload attachment");
+                }
+              }}>
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div className="space-y-2">
                 <input
@@ -300,7 +330,16 @@ export function TicketSlideOver({
             <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-400">
               Quick note
             </p>
-            <form action={async (fd) => { await addNote(fd); refresh(); }}>
+            <form key={noteKey} action={async (fd) => {
+                try {
+                  setActionError(null);
+                  await addNote(fd);
+                  setNoteKey((k) => k + 1);
+                  refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Failed to post note");
+                }
+              }}>
               <input type="hidden" name="ticketId" value={ticket.id} />
               <Textarea
                 name="note"
@@ -319,6 +358,12 @@ export function TicketSlideOver({
               </div>
             </form>
           </section>
+
+          {actionError && (
+            <div className="border-t border-red-100 bg-red-50 px-5 py-3">
+              <p className="text-xs font-semibold text-red-600">{actionError}</p>
+            </div>
+          )}
         </div>
       </div>
     </>

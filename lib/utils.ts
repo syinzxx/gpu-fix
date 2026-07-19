@@ -44,3 +44,16 @@ export function cn(...classes: (string | false | null | undefined)[]): string {
 export function paymentsTotal(payments: { amount: number; kind: string }[]): number {
   return payments.reduce((sum, p) => sum + (p.kind === "REFUND" ? -p.amount : p.amount), 0);
 }
+
+export function etaUrgency(
+  date: Date | null | undefined
+): "overdue" | "today" | "future" | "none" {
+  if (!date) return "none";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  if (d < today) return "overdue";
+  if (d.getTime() === today.getTime()) return "today";
+  return "future";
+}

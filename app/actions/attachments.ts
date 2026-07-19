@@ -56,6 +56,8 @@ export async function uploadAttachment(formData: FormData) {
 
   revalidatePath(`/dashboard/tickets/${ticket.id}`);
   revalidatePath(`/track/${ticket.code}`);
+  revalidatePath("/dashboard/tickets");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteAttachment(formData: FormData) {

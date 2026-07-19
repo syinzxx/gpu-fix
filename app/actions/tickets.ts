@@ -236,6 +236,7 @@ export async function assignTicket(formData: FormData) {
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
   revalidatePath("/dashboard/tickets");
+  revalidatePath("/dashboard");
 }
 
 export async function updateTicketDetails(formData: FormData) {
@@ -253,6 +254,21 @@ export async function updateTicketDetails(formData: FormData) {
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
+}
+
+export async function updateEta(formData: FormData) {
+  await requireUser();
+  const ticketId = formData.get("ticketId") as string;
+  const etaRaw = formData.get("etaDate") as string;
+
+  await db.ticket.update({
+    where: { id: ticketId },
+    data: { etaDate: etaRaw ? new Date(etaRaw) : null },
+  });
+
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+  revalidatePath("/dashboard/tickets");
+  revalidatePath("/dashboard");
 }
 
 export async function addPartToTicket(formData: FormData) {

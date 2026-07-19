@@ -1,45 +1,95 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { ACTIVE_STATUSES } from "@/lib/constants";
-import { Card, CardHeader, Table, Th, Td, EmptyState, Badge } from "@/components/ui";
-import { StatusBadge, PriorityBadge } from "@/components/status-badge";
-import { fmtDate } from "@/lib/utils";
+import { Card, CardHeader } from "@/components/ui";
+import { etaUrgency } from "@/lib/utils";
+import { QueueClient } from "@/components/queue-client";
 import { getT } from "@/lib/locale";
 
 export default async function DashboardPage() {
-  const [activeCount, readyCount, quotesPending, lowStock, recentTickets, t] = await Promise.all([
-    db.ticket.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
-    db.ticket.count({ where: { status: "READY_FOR_PICKUP" } }),
-    db.ticket.count({ where: { status: "QUOTE_SENT" } }),
-    db.$queryRaw<{ cnt: bigint }[]>`SELECT COUNT(*) as cnt FROM Part WHERE quantity <= lowStockThreshold`,
-    db.ticket.findMany({
-      where: { status: { not: "CLOSED" } },
-      include: { customer: true, assignedTo: true },
-      orderBy: { createdAt: "asc" },
-      take: 50,
-    }),
-    getT(),
-  ]);
-
-  const rank: Record<string, number> = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
-  recentTickets.sort((a, b) => (rank[a.priority] ?? 2) - (rank[b.priority] ?? 2));
-  const queue = recentTickets.slice(0, 10);
+  const [activeCount, readyCount, quotesPending, lowStock, allOpen, technicians, t] =
+    await Promise.all([
+      db.ticket.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
+      db.ticket.count({ where: { status: "READY_FOR_PICKUP" } }),
+      db.ticket.count({ where: { status: "QUOTE_SENT" } }),
+      db.$queryRaw<{ cnt: bigint }[]>`SELECT COUNT(*) as cnt FROM Part WHERE quantity <= lowStockThreshold`,
+      db.ticket.findMany({
+        where: { status: { not: "CLOSED" } },
+        include: {
+          customer: true,
+          assignedTo: true,
+          attachments: { orderBy: { createdAt: "desc" } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.user.findMany({
+        where: { active: true, role: { in: ["TECHNICIAN", "ADMIN"] } },
+        orderBy: { name: "asc" },
+      }),
+      getT(),
+    ]);
 
   const lowStockCount = Number(lowStock[0]?.cnt ?? 0);
 
-  const stats = [
-    { label: t.devicesInQueue, value: activeCount, href: "/dashboard/tickets" },
+  // Sort: priority → ETA urgency (overdue first) → received asc
+  const priorityRank: Record<string, number> = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
+  const etaRank = { overdue: 0, today: 1, future: 2, none: 3 } as const;
+
+  allOpen.sort((a, b) => {
+    const pDiff = (priorityRank[a.priority] ?? 2) - (priorityRank[b.priority] ?? 2);
+    if (pDiff !== 0) return pDiff;
+    const eDiff = etaRank[etaUrgency(a.etaDate)] - etaRank[etaUrgency(b.etaDate)];
+    if (eDiff !== 0) return eDiff;
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  });
+
+  const queue = allOpen.slice(0, 20);
+  const overdueTickets = allOpen.filter((tk) => etaUrgency(tk.etaDate) === "overdue");
+  const overdueCount = overdueTickets.length;
+
+  const stats: {
+    label: string;
+    value: number;
+    href: string;
+    sub?: string | null;
+    subAlert?: boolean;
+    alert?: boolean;
+  }[] = [
+    {
+      label: t.devicesInQueue,
+      value: activeCount,
+      href: "/dashboard/tickets",
+      sub: overdueCount > 0 ? `${overdueCount} overdue` : null,
+      subAlert: true,
+    },
     { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?status=READY_FOR_PICKUP" },
     { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=QUOTE_SENT" },
-    { label: t.lowStockParts, value: lowStockCount, href: "/dashboard/inventory?filter=low", alert: lowStockCount > 0 },
+    {
+      label: t.lowStockParts,
+      value: lowStockCount,
+      href: "/dashboard/inventory?filter=low",
+      alert: lowStockCount > 0,
+    },
   ];
+
+  const queueLabels = {
+    code: t.code,
+    device: t.device,
+    customer: t.customers,
+    status: t.status,
+    assigned: t.assigned,
+    eta: "ETA",
+    unassigned: t.unassigned,
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
           <p className="silk-label text-violet-600">workshop</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">{t.overview}</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
+            {t.overview}
+          </h1>
         </div>
         <Link
           href="/dashboard/tickets/new"
@@ -49,60 +99,66 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
             <Card className="p-5 transition-colors hover:ring-violet-300">
               <p className="silk-label text-slate-400">{s.label}</p>
-              <p className={`mt-1 font-display text-3xl font-bold tracking-tight tracking-tight ${s.alert ? "text-rose-600" : "text-slate-900"}`}>
+              <p
+                className={`mt-1 font-display text-3xl font-bold tracking-tight ${
+                  s.alert ? "text-rose-600" : "text-slate-900"
+                }`}
+              >
                 {s.value}
               </p>
+              {s.sub && (
+                <p className={`mt-0.5 text-xs font-semibold ${s.subAlert ? "text-red-500" : "text-slate-400"}`}>
+                  {s.sub}
+                </p>
+              )}
             </Card>
           </Link>
         ))}
       </div>
 
+      {/* Overdue alert banner */}
+      {overdueCount > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="text-base">🔴</span>
+            <div>
+              <p className="text-sm font-semibold text-red-700">
+                {overdueCount} ticket{overdueCount > 1 ? "s are" : " is"} overdue
+              </p>
+              <p className="text-xs text-red-400">
+                {overdueTickets
+                  .slice(0, 3)
+                  .map((tk) => tk.code)
+                  .join(" · ")}
+                {overdueCount > 3 && ` · +${overdueCount - 3} more`}
+                {" — click any row to take action"}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/tickets"
+            className="shrink-0 text-xs font-semibold text-red-600 hover:underline"
+          >
+            View all →
+          </Link>
+        </div>
+      )}
+
+      {/* Queue table */}
       <Card>
         <CardHeader title={t.openTickets} />
-        {queue.length === 0 ? (
-          <EmptyState message={t.noTickets} />
-        ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>#</Th>
-                <Th>{t.code}</Th>
-                <Th>{t.device}</Th>
-                <Th>{t.customers}</Th>
-                <Th>{t.status}</Th>
-                <Th>{t.assigned}</Th>
-                <Th>{t.received}</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {queue.map((ticket, i) => (
-                <tr key={ticket.id} className="hover:bg-slate-50">
-                  <Td className="font-mono text-xs text-slate-400">{String(i + 1).padStart(2, "0")}</Td>
-                  <Td>
-                    <Link href={`/dashboard/tickets/${ticket.id}`} className="font-mono font-semibold text-violet-700 hover:underline">
-                      {ticket.code}
-                    </Link>
-                  </Td>
-                  <Td>
-                    <div className="flex items-center gap-2">
-                      {ticket.brand} {ticket.model}
-                      <PriorityBadge priority={ticket.priority} />
-                    </div>
-                  </Td>
-                  <Td>{ticket.customer.name}</Td>
-                  <Td><StatusBadge status={ticket.status} /></Td>
-                  <Td>{ticket.assignedTo?.name ?? <Badge className="bg-slate-100 text-slate-600">{t.unassigned}</Badge>}</Td>
-                  <Td>{fmtDate(ticket.createdAt)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
+        <QueueClient
+          tickets={queue}
+          technicians={technicians}
+          emptyMessage={t.noTickets}
+          labels={queueLabels}
+        />
       </Card>
     </div>
   );

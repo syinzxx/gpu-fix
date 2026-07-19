@@ -24,3 +24,21 @@ export function normalizePhone(raw: string): string {
   // Any other number — return digits as-is (caller's responsibility)
   return digits;
 }
+
+/**
+ * Resolves the shop's WhatsApp number from env overrides, falling back to the
+ * saved settings phone. Uses || (not ??) so empty strings fall through.
+ *
+ * Server-only in practice: SHOP_WHATSAPP / SHOP_PHONE are non-NEXT_PUBLIC env
+ * vars, so they only resolve on the server. Call this from server components.
+ */
+export function resolveWhatsappNumber(settingsPhone: string): string | null {
+  return (
+    process.env.SHOP_WHATSAPP || process.env.SHOP_PHONE || settingsPhone || null
+  );
+}
+
+/** Builds a wa.me chat link with a prefilled message. */
+export function waMeLink(rawNumber: string, text: string): string {
+  return `https://wa.me/${normalizePhone(rawNumber)}?text=${encodeURIComponent(text)}`;
+}

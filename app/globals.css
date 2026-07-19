@@ -44,3 +44,15 @@ body {
     background: #ffffff;
   }
 }
+
+/* 80mm thermal/label printer pages (ticket + part labels). Chromium-based
+   browsers honor the named @page rule and print only at label size; other
+   browsers fall back to the default page size with the label content
+   centered, which still prints fine. */
+.print-label {
+  page: print-label;
+}
+@page print-label {
+  size: 80mm auto;
+  margin: 3mm;
+}

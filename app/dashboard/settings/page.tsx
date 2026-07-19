@@ -29,6 +29,11 @@ export default async function SettingsPage() {
             <Label htmlFor="shopPhone">{t.phone}</Label>
             <Input id="shopPhone" name="shopPhone" defaultValue={settings.shopPhone} placeholder="+20 1x xxxx xxxx" />
           </div>
+          <div>
+            <Label htmlFor="shopHours">{t.hours}</Label>
+            <Input id="shopHours" name="shopHours" defaultValue={settings.shopHours} placeholder="Sat–Thu 10:00–20:00" aria-describedby="shopHours-hint" />
+            <p id="shopHours-hint" className="mt-1 text-xs text-slate-400">{t.hoursHint}</p>
+          </div>
           <Button type="submit" variant="primary" className="w-full">{t.saveSettings}</Button>
         </form>
       </Card>

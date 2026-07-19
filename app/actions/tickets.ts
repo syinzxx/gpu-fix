@@ -4,31 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser, requireRole } from "@/lib/auth";
-import { generateTicketCode } from "@/lib/utils";
+import { generateTicketCode, money } from "@/lib/utils";
 import { fmtDate } from "@/lib/utils";
-import { STATUS_FLOW, statusMessage, type TicketStatus } from "@/lib/constants";
-import { sendWhatsapp } from "@/lib/whatsapp";
-
-/** Builds the per-status single-sentence line used in the ticket_update template. */
-function buildStatusLine(opts: {
-  status: TicketStatus;
-  device: string;
-  quoteAmount?: number | null;
-  eta?: string | null;
-}): string {
-  const { status, device, quoteAmount, eta } = opts;
-  const lines: Record<TicketStatus, string> = {
-    RECEIVED: `We received your ${device}`,
-    DIAGNOSING: `Your ${device} is now being diagnosed`,
-    QUOTE_SENT: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
-    QUOTE_APPROVED: `Quote approved — your ${device} is queued for repair`,
-    QUOTE_REJECTED: `Quote declined. Your ${device} will be prepared for return`,
-    IN_REPAIR: `Your ${device} is now being repaired${eta ? `. ETA: ${eta}` : ""}`,
-    READY_FOR_PICKUP: `Your ${device} is ready for pickup!`,
-    CLOSED: `Ticket closed. Thank you for choosing us!`,
-  };
-  return lines[status];
-}
+import { STATUS_FLOW, PAYMENT_METHODS, type TicketStatus, type PaymentMethod } from "@/lib/constants";
+import { sendTicketStatusWhatsapp } from "@/lib/whatsapp";
 
 async function uniqueTicketCode(): Promise<string> {
   for (let i = 0; i < 10; i++) {
@@ -71,6 +50,19 @@ export async function createTicket(formData: FormData) {
   const isWarrantyReturn = formData.get("isWarrantyReturn") === "on";
   const warrantyTicketId = (formData.get("warrantyTicketId") as string)?.trim() || null;
 
+  const depositRaw = formData.get("depositAmount") as string;
+  const depositAmount = depositRaw ? parseFloat(depositRaw) : 0;
+  const depositMethodRaw = (formData.get("depositMethod") as string) || "CASH";
+  const depositMethod: PaymentMethod = PAYMENT_METHODS.includes(depositMethodRaw as PaymentMethod)
+    ? (depositMethodRaw as PaymentMethod)
+    : "CASH";
+
+  const signatureRaw = (formData.get("intakeSignature") as string) || "";
+  const intakeSignature =
+    signatureRaw.startsWith("data:image/png;base64,") && signatureRaw.length < 200_000
+      ? signatureRaw
+      : null;
+
   const ticket = await db.ticket.create({
     data: {
       code,
@@ -86,6 +78,7 @@ export async function createTicket(formData: FormData) {
       assignedToId: (formData.get("assignedToId") as string) || null,
       isWarrantyReturn,
       warrantyTicketId,
+      intakeSignature,
       createdById: user.id,
       events: {
         create: {
@@ -98,22 +91,49 @@ export async function createTicket(formData: FormData) {
     },
   });
 
-  const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
-  await sendWhatsapp({
+  const checklistTemplates = await db.checklistTemplate.findMany({
+    where: { deviceType: ticket.deviceType },
+    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
+  });
+  if (checklistTemplates.length > 0) {
+    await db.ticketChecklistItem.createMany({
+      data: checklistTemplates.map((t) => ({
+        ticketId: ticket.id,
+        phase: t.phase,
+        label: t.label,
+        sortOrder: t.sortOrder,
+      })),
+    });
+  }
+
+  if (depositAmount > 0) {
+    await db.payment.create({
+      data: {
+        ticketId: ticket.id,
+        amount: depositAmount,
+        method: depositMethod,
+        kind: "DEPOSIT",
+        receivedById: user.id,
+      },
+    });
+    await db.ticketEvent.create({
+      data: {
+        ticketId: ticket.id,
+        type: "PAYMENT",
+        note: `Deposit recorded: ${money(depositAmount)} (${depositMethod})`,
+        isPublic: false,
+        createdById: user.id,
+      },
+    });
+  }
+
+  await sendTicketStatusWhatsapp({
     ticketId: ticket.id,
     to: customer.whatsapp,
-    body: statusMessage({
-      customerName: customer.name,
-      code: ticket.code,
-      status: "RECEIVED",
-      device: `${brand} ${model}`,
-    }),
-    templateParams: {
-      customerName: customer.name,
-      code: ticket.code,
-      statusLine: buildStatusLine({ status: "RECEIVED", device: `${brand} ${model}` }),
-      trackUrl,
-    },
+    customerName: customer.name,
+    code: ticket.code,
+    status: "RECEIVED",
+    device: `${brand} ${model}`,
   });
 
   revalidatePath("/dashboard/tickets");
@@ -158,31 +178,17 @@ export async function changeStatus(formData: FormData) {
     },
   });
 
-  const changeStatusTrackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
   const changeStatusQuoteAmount = toStatus === "QUOTE_SENT" ? parseFloat(quoteRaw!) : ticket.quoteAmount;
   const changeStatusEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
-  await sendWhatsapp({
+  await sendTicketStatusWhatsapp({
     ticketId,
     to: ticket.customer.whatsapp,
-    body: statusMessage({
-      customerName: ticket.customer.name,
-      code: ticket.code,
-      status: toStatus,
-      device: `${ticket.brand} ${ticket.model}`,
-      quoteAmount: changeStatusQuoteAmount,
-      eta: changeStatusEta,
-    }),
-    templateParams: {
-      customerName: ticket.customer.name,
-      code: ticket.code,
-      statusLine: buildStatusLine({
-        status: toStatus,
-        device: `${ticket.brand} ${ticket.model}`,
-        quoteAmount: changeStatusQuoteAmount,
-        eta: changeStatusEta,
-      }),
-      trackUrl: changeStatusTrackUrl,
-    },
+    customerName: ticket.customer.name,
+    code: ticket.code,
+    status: toStatus,
+    device: `${ticket.brand} ${ticket.model}`,
+    quoteAmount: changeStatusQuoteAmount,
+    eta: changeStatusEta,
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -307,30 +313,16 @@ export async function resendWhatsapp(formData: FormData) {
     include: { customer: true },
   });
 
-  const resendTrackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${ticket.code}`;
   const resendEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
-  await sendWhatsapp({
+  await sendTicketStatusWhatsapp({
     ticketId,
     to: ticket.customer.whatsapp,
-    body: statusMessage({
-      customerName: ticket.customer.name,
-      code: ticket.code,
-      status: ticket.status as TicketStatus,
-      device: `${ticket.brand} ${ticket.model}`,
-      quoteAmount: ticket.quoteAmount,
-      eta: resendEta,
-    }),
-    templateParams: {
-      customerName: ticket.customer.name,
-      code: ticket.code,
-      statusLine: buildStatusLine({
-        status: ticket.status as TicketStatus,
-        device: `${ticket.brand} ${ticket.model}`,
-        quoteAmount: ticket.quoteAmount,
-        eta: resendEta,
-      }),
-      trackUrl: resendTrackUrl,
-    },
+    customerName: ticket.customer.name,
+    code: ticket.code,
+    status: ticket.status as TicketStatus,
+    device: `${ticket.brand} ${ticket.model}`,
+    quoteAmount: ticket.quoteAmount,
+    eta: resendEta,
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);

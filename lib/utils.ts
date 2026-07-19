@@ -38,3 +38,9 @@ export function fmtDateTime(d: Date | string | null | undefined): string {
 export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }
+
+// Nets a set of ticket payments to a single amount: DEPOSIT/PAYMENT add,
+// REFUND subtracts (refund amounts are stored positive).
+export function paymentsTotal(payments: { amount: number; kind: string }[]): number {
+  return payments.reduce((sum, p) => sum + (p.kind === "REFUND" ? -p.amount : p.amount), 0);
+}

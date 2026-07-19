@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
+import { statusMessage, buildStatusLine, type TicketStatus } from "@/lib/constants";
 
 /**
  * Optional structured params for the ticket_update template.
@@ -103,6 +104,50 @@ export async function sendWhatsapp(opts: {
       },
     });
   }
+}
+
+/**
+ * Sends the standard per-status-change WhatsApp message for a ticket.
+ * This is the single place that assembles the free-text body (statusMessage)
+ * and the ticket_update template line (buildStatusLine) so every caller —
+ * createTicket, changeStatus, resendWhatsapp, and the public quote-approval
+ * actions — sends an identical message for a given status. Do not
+ * reimplement this assembly elsewhere; call this instead.
+ */
+export async function sendTicketStatusWhatsapp(opts: {
+  ticketId: string;
+  to: string | null | undefined;
+  customerName: string;
+  code: string;
+  status: TicketStatus;
+  device: string;
+  quoteAmount?: number | null;
+  eta?: string | null;
+}): Promise<void> {
+  const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${opts.code}`;
+  await sendWhatsapp({
+    ticketId: opts.ticketId,
+    to: opts.to,
+    body: statusMessage({
+      customerName: opts.customerName,
+      code: opts.code,
+      status: opts.status,
+      device: opts.device,
+      quoteAmount: opts.quoteAmount,
+      eta: opts.eta,
+    }),
+    templateParams: {
+      customerName: opts.customerName,
+      code: opts.code,
+      statusLine: buildStatusLine({
+        status: opts.status,
+        device: opts.device,
+        quoteAmount: opts.quoteAmount,
+        eta: opts.eta,
+      }),
+      trackUrl,
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------

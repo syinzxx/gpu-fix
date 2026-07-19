@@ -78,6 +78,28 @@ export const PART_CATEGORIES = [
   "OTHER",
 ] as const;
 
+export const PAYMENT_METHODS = ["CASH", "CARD", "INSTAPAY", "WALLET"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const PAYMENT_KINDS = ["DEPOSIT", "PAYMENT", "REFUND"] as const;
+export type PaymentKind = (typeof PAYMENT_KINDS)[number];
+
+export const PAYMENT_KIND_COLORS: Record<string, string> = {
+  DEPOSIT: "bg-sky-100 text-sky-700",
+  PAYMENT: "bg-emerald-100 text-emerald-700",
+  REFUND: "bg-rose-100 text-rose-700",
+};
+
+export const EXPENSE_CATEGORIES = [
+  "RENT",
+  "UTILITIES",
+  "PARTS",
+  "SALARIES",
+  "TRANSPORT",
+  "OTHER",
+] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
 // Message sent to the customer on each status change
 export function statusMessage(opts: {
   customerName: string;
@@ -97,7 +119,28 @@ export function statusMessage(opts: {
     QUOTE_REJECTED: `Quote declined. Your ${opts.device} will be prepared for return.`,
     IN_REPAIR: `Good news — your ${opts.device} is now being repaired.${opts.eta ? ` Estimated completion: ${opts.eta}.` : ""}`,
     READY_FOR_PICKUP: `Your ${opts.device} is ready for pickup! See the summary at ${trackUrl}`,
-    CLOSED: `Ticket ${opts.code} is closed. Thank you for choosing ${shop}!`,
+    CLOSED: `Ticket ${opts.code} is closed. Thank you for choosing ${shop}! We'd love your feedback — rate your repair experience: ${trackUrl}`,
   };
   return `Hi ${opts.customerName}, ticket ${opts.code}: ${lines[opts.status]}`;
+}
+
+/** Builds the per-status single-sentence line used in the ticket_update WhatsApp template. */
+export function buildStatusLine(opts: {
+  status: TicketStatus;
+  device: string;
+  quoteAmount?: number | null;
+  eta?: string | null;
+}): string {
+  const { status, device, quoteAmount, eta } = opts;
+  const lines: Record<TicketStatus, string> = {
+    RECEIVED: `We received your ${device}`,
+    DIAGNOSING: `Your ${device} is now being diagnosed`,
+    QUOTE_SENT: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
+    QUOTE_APPROVED: `Quote approved — your ${device} is queued for repair`,
+    QUOTE_REJECTED: `Quote declined. Your ${device} will be prepared for return`,
+    IN_REPAIR: `Your ${device} is now being repaired${eta ? `. ETA: ${eta}` : ""}`,
+    READY_FOR_PICKUP: `Your ${device} is ready for pickup!`,
+    CLOSED: `Ticket closed. Thank you for choosing us! We'd love your feedback — please rate your repair experience`,
+  };
+  return lines[status];
 }

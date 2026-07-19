@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { createTicket } from "@/app/actions/tickets";
-import { DEVICE_TYPES, PRIORITIES } from "@/lib/constants";
+import { DEVICE_TYPES, PRIORITIES, PAYMENT_METHODS } from "@/lib/constants";
 import { Button, Input, Label, Select, Textarea, Card, CardHeader } from "@/components/ui";
+import { SignaturePad } from "@/components/signature-pad";
 
 export default async function NewTicketPage() {
   const technicians = await db.user.findMany({
@@ -109,6 +110,34 @@ export default async function NewTicketPage() {
               <Label htmlFor="warrantyTicketId">Original ticket code (if warranty return)</Label>
               <Input id="warrantyTicketId" name="warrantyTicketId" placeholder="e.g. GPU-4F7K2" />
             </div>
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="Deposit (optional)" />
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="depositAmount">Deposit amount</Label>
+              <Input id="depositAmount" name="depositAmount" type="number" step="0.01" min="0" placeholder="0" />
+            </div>
+            <div>
+              <Label htmlFor="depositMethod">Payment method</Label>
+              <Select id="depositMethod" name="depositMethod" defaultValue="CASH">
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <p className="px-5 pb-5 text-xs text-slate-400">
+            If an amount is entered, it&apos;s recorded as a deposit payment on the ticket right after it&apos;s created.
+          </p>
+        </Card>
+
+        <Card>
+          <CardHeader title="Customer signature (optional)" />
+          <div className="p-5">
+            <SignaturePad />
           </div>
         </Card>
 

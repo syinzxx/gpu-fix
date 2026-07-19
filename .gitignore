@@ -43,6 +43,9 @@ next-env.d.ts
 # local sqlite database
 prisma/dev.db*
 
+# user-uploaded ticket photos
+public/uploads/
+
 # desktop app build artifacts
 desktop/node_modules/
 desktop/dist/

@@ -8,12 +8,19 @@ import { money, cn } from "@/lib/utils";
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; category?: string }>;
+  searchParams: Promise<{ filter?: string; category?: string; q?: string }>;
 }) {
-  const { filter, category } = await searchParams;
+  const { filter, category, q } = await searchParams;
 
   const parts = await db.part.findMany({
-    where: category ? { category } : {},
+    where: {
+      ...(category ? { category } : {}),
+      ...(q
+        ? {
+            OR: [{ sku: { contains: q } }, { name: { contains: q } }],
+          }
+        : {}),
+    },
     include: { supplier: true },
     orderBy: { name: "asc" },
   });
@@ -82,6 +89,17 @@ export default async function InventoryPage({
         ))}
       </div>
 
+      <form className="max-w-sm">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Scan or search SKU / part name…"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+        />
+        {category && <input type="hidden" name="category" value={category} />}
+        {filter && <input type="hidden" name="filter" value={filter} />}
+      </form>
+
       <Card>
         {shown.length === 0 ? (
           <EmptyState message="No parts found." />
@@ -90,7 +108,7 @@ export default async function InventoryPage({
             <thead>
               <tr>
                 <Th>SKU</Th><Th>Part</Th><Th>Category</Th><Th>Stock</Th>
-                <Th>Cost</Th><Th>Sell</Th><Th>Supplier</Th><Th>Adjust</Th>
+                <Th>Cost</Th><Th>Sell</Th><Th>Supplier</Th><Th>Adjust</Th><Th>Label</Th>
               </tr>
             </thead>
             <tbody>
@@ -125,6 +143,15 @@ export default async function InventoryPage({
                           <Button size="sm" variant="secondary" type="submit">+</Button>
                         </form>
                       </div>
+                    </Td>
+                    <Td>
+                      <Link
+                        href={`/dashboard/inventory/${p.id}/label`}
+                        className="text-slate-400 hover:text-violet-700"
+                        title="Print label"
+                      >
+                        🏷️
+                      </Link>
                     </Td>
                   </tr>
                 );

@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import {
   STATUS_FLOW,
   STATUS_LABELS,
   ACTIVE_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_KINDS,
+  PAYMENT_KIND_COLORS,
   type TicketStatus,
 } from "@/lib/constants";
 import {
@@ -18,9 +22,12 @@ import {
   resendWhatsapp,
   setWarranty,
 } from "@/app/actions/tickets";
+import { recordPayment, deleteVoidPayment } from "@/app/actions/payments";
+import { uploadAttachment, deleteAttachment } from "@/app/actions/attachments";
+import { toggleChecklistItem, loadChecklist } from "@/app/actions/checklists";
 import { Button, Input, Label, Select, Textarea, Card, CardHeader, Table, Th, Td, Badge, EmptyState } from "@/components/ui";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
-import { fmtDate, fmtDateTime, money } from "@/lib/utils";
+import { fmtDate, fmtDateTime, money, paymentsTotal, cn } from "@/lib/utils";
 
 export default async function TicketDetailPage({
   params,
@@ -29,19 +36,30 @@ export default async function TicketDetailPage({
 }) {
   const { id } = await params;
 
-  const ticket = await db.ticket.findUnique({
-    where: { id },
-    include: {
-      customer: true,
-      assignedTo: true,
-      createdBy: true,
-      events: { include: { createdBy: true }, orderBy: { createdAt: "desc" } },
-      partsUsed: { include: { part: true }, orderBy: { createdAt: "asc" } },
-      invoice: true,
-      whatsappLogs: { orderBy: { createdAt: "desc" }, take: 5 },
-    },
-  });
+  const [ticket, session] = await Promise.all([
+    db.ticket.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        assignedTo: true,
+        createdBy: true,
+        events: { include: { createdBy: true }, orderBy: { createdAt: "desc" } },
+        partsUsed: { include: { part: true }, orderBy: { createdAt: "asc" } },
+        invoice: true,
+        whatsappLogs: { orderBy: { createdAt: "desc" }, take: 5 },
+        payments: { include: { receivedBy: true }, orderBy: { createdAt: "desc" } },
+        attachments: { orderBy: { createdAt: "desc" } },
+        checklistItems: { include: { checkedBy: true }, orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    auth(),
+  ]);
   if (!ticket) notFound();
+
+  const isAdmin = session?.user?.role === "ADMIN";
+  const totalPaid = paymentsTotal(ticket.payments);
+  const preChecks = ticket.checklistItems.filter((c) => c.phase === "PRE");
+  const postChecks = ticket.checklistItems.filter((c) => c.phase === "POST");
 
   const [technicians, parts, queueAhead] = await Promise.all([
     db.user.findMany({ where: { active: true, role: { in: ["TECHNICIAN", "ADMIN"] } }, orderBy: { name: "asc" } }),
@@ -85,8 +103,25 @@ export default async function TicketDetailPage({
               <> · <span className="text-amber-600">ref: {ticket.warrantyTicketId}</span></>
             )}
           </p>
+          {ticket.rating != null && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-1 ring-1 ring-amber-100">
+              <span className="text-sm tracking-tight text-amber-500" aria-label={`${ticket.rating} out of 5 stars`}>
+                {"★".repeat(ticket.rating)}
+                <span className="text-amber-200">{"★".repeat(5 - ticket.rating)}</span>
+              </span>
+              {ticket.ratingComment && (
+                <span className="text-xs text-slate-500">&ldquo;{ticket.ratingComment}&rdquo;</span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/dashboard/tickets/${ticket.id}/label`}
+            className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
+          >
+            Print label
+          </Link>
           <Link
             href={`/track/${ticket.code}`}
             target="_blank"
@@ -142,6 +177,142 @@ export default async function TicketDetailPage({
                 <p className="mt-3 text-xs text-slate-400">Accessories: {ticket.accessories}</p>
               )}
             </div>
+          </Card>
+
+          {/* Pre/post-repair checklists */}
+          <Card>
+            <CardHeader title="Pre-repair checks" />
+            {preChecks.length === 0 ? (
+              <div className="p-5">
+                <EmptyState message="No checklist loaded yet." />
+                <form action={loadChecklist} className="mt-2 flex justify-center">
+                  <input type="hidden" name="ticketId" value={ticket.id} />
+                  <Button type="submit" size="sm" variant="secondary">Load checklist</Button>
+                </form>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {preChecks.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className={cn("text-sm", item.checked ? "text-slate-400 line-through" : "text-slate-900")}>
+                        {item.label}
+                      </p>
+                      {item.checked && (
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {item.checkedBy?.name ?? "—"} · {fmtDateTime(item.checkedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <form action={toggleChecklistItem}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
+                        {item.checked ? "✓ Checked" : "Mark done"}
+                      </Button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader title="Post-repair checks" />
+            {postChecks.length === 0 ? (
+              <div className="p-5">
+                <EmptyState message="No checklist loaded yet." />
+                <form action={loadChecklist} className="mt-2 flex justify-center">
+                  <input type="hidden" name="ticketId" value={ticket.id} />
+                  <Button type="submit" size="sm" variant="secondary">Load checklist</Button>
+                </form>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {postChecks.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className={cn("text-sm", item.checked ? "text-slate-400 line-through" : "text-slate-900")}>
+                        {item.label}
+                      </p>
+                      {item.checked && (
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {item.checkedBy?.name ?? "—"} · {fmtDateTime(item.checkedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <form action={toggleChecklistItem}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
+                        {item.checked ? "✓ Checked" : "Mark done"}
+                      </Button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {/* Photos */}
+          <Card>
+            <CardHeader title="Photos" />
+            <form action={uploadAttachment} className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
+              <input type="hidden" name="ticketId" value={ticket.id} />
+              <div className="min-w-[180px] flex-1">
+                <Label>Photo</Label>
+                <input
+                  type="file"
+                  name="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  required
+                  className="block w-full text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                />
+              </div>
+              <div className="w-36">
+                <Label>Kind</Label>
+                <Select name="kind" defaultValue="INTAKE">
+                  <option value="INTAKE">Intake</option>
+                  <option value="COMPLETION">Completion</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              </div>
+              <label className="flex items-center gap-1.5 pb-2 text-xs text-slate-500">
+                <input type="checkbox" name="isPublic" className="accent-violet-600" />
+                Visible to customer
+              </label>
+              <Button type="submit" variant="secondary">Upload</Button>
+            </form>
+            {ticket.attachments.length === 0 ? (
+              <EmptyState message="No photos uploaded yet." />
+            ) : (
+              <div className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4">
+                {ticket.attachments.map((a) => (
+                  <div key={a.id} className="group relative overflow-hidden rounded-lg ring-1 ring-slate-200">
+                    <a href={a.path} target="_blank" rel="noopener noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- staff-uploaded photo served from public/uploads, not eligible for next/image optimization */}
+                      <img src={a.path} alt="" className="aspect-square w-full object-cover" />
+                    </a>
+                    <Badge className="absolute left-1 top-1 bg-white/90 text-slate-600">{a.kind}</Badge>
+                    {a.isPublic && (
+                      <Badge className="absolute right-1 top-1 bg-emerald-100 text-emerald-700">public</Badge>
+                    )}
+                    {(isAdmin || a.createdById === session?.user?.id) && (
+                      <form action={deleteAttachment} className="absolute bottom-1 right-1">
+                        <input type="hidden" name="id" value={a.id} />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          type="submit"
+                          className="bg-white/90 backdrop-blur hover:bg-white"
+                          title="Delete photo"
+                        >
+                          ✕
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* Parts used */}
@@ -202,6 +373,78 @@ export default async function TicketDetailPage({
             )}
           </Card>
 
+          {/* Payments */}
+          <Card>
+            <CardHeader title="Payments" />
+            {ticket.payments.length === 0 ? (
+              <EmptyState message="No payments recorded yet." />
+            ) : (
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Amount</Th><Th>Method</Th><Th>Kind</Th><Th>Received by</Th><Th>When</Th><Th></Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ticket.payments.map((p) => (
+                    <tr key={p.id}>
+                      <Td className={p.kind === "REFUND" ? "font-medium text-rose-600" : "font-medium"}>
+                        {p.kind === "REFUND" ? `−${money(p.amount)}` : money(p.amount)}
+                      </Td>
+                      <Td>{p.method}</Td>
+                      <Td><Badge className={PAYMENT_KIND_COLORS[p.kind] ?? "bg-slate-100 text-slate-600"}>{p.kind}</Badge></Td>
+                      <Td className="text-xs text-slate-500">{p.receivedBy?.name ?? "—"}</Td>
+                      <Td className="text-xs text-slate-400">
+                        {fmtDateTime(p.createdAt)}
+                        {p.note && <span className="block text-slate-400">{p.note}</span>}
+                      </Td>
+                      <Td>
+                        {isAdmin && (
+                          <form action={deleteVoidPayment}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <Button size="sm" variant="ghost" type="submit" title="Delete payment">✕</Button>
+                          </form>
+                        )}
+                      </Td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <Td colSpan={4} className="text-right font-medium">Total paid</Td>
+                    <Td colSpan={2} className="font-bold">{money(totalPaid)}</Td>
+                  </tr>
+                </tbody>
+              </Table>
+            )}
+            <form action={recordPayment} className="flex flex-wrap items-end gap-2 border-t border-slate-100 p-4">
+              <input type="hidden" name="ticketId" value={ticket.id} />
+              <div className="w-28">
+                <Label>Amount</Label>
+                <Input name="amount" type="number" step="0.01" min="0.01" required />
+              </div>
+              <div className="w-32">
+                <Label>Method</Label>
+                <Select name="method" defaultValue="CASH">
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="w-32">
+                <Label>Kind</Label>
+                <Select name="kind" defaultValue="PAYMENT">
+                  {PAYMENT_KINDS.map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="min-w-[140px] flex-1">
+                <Label>Note</Label>
+                <Input name="note" placeholder="Optional" />
+              </div>
+              <Button type="submit" variant="secondary">Record</Button>
+            </form>
+          </Card>
+
           {/* Timeline + notes */}
           <Card>
             <CardHeader title="Timeline & notes" />
@@ -220,7 +463,7 @@ export default async function TicketDetailPage({
               {ticket.events.map((e) => (
                 <li key={e.id} className="flex gap-3 px-3 py-3">
                   <span className="mt-0.5 text-sm">
-                    {e.type === "NOTE" ? "📝" : e.type === "ASSIGNMENT" ? "👤" : "🔄"}
+                    {e.type === "NOTE" ? "📝" : e.type === "ASSIGNMENT" ? "👤" : e.type === "PAYMENT" ? "💰" : "🔄"}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-900">
@@ -260,6 +503,20 @@ export default async function TicketDetailPage({
               {ticket.customer.email && <p className="text-slate-500">{ticket.customer.email}</p>}
             </div>
           </Card>
+
+          {ticket.intakeSignature && (
+            <Card>
+              <CardHeader title="Intake signature" />
+              <div className="p-5">
+                {/* eslint-disable-next-line @next/next/no-img-element -- staff-only view of a captured PNG data URL, not eligible for next/image optimization */}
+                <img
+                  src={ticket.intakeSignature}
+                  alt="Customer signature captured at intake"
+                  className="max-h-32 w-full rounded-lg border border-slate-200 bg-white object-contain"
+                />
+              </div>
+            </Card>
+          )}
 
           <Card>
             <CardHeader title="Assignment" />

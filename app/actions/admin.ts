@@ -67,11 +67,13 @@ export async function saveSettings(formData: FormData) {
       shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
       shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
       shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
+      shopHours: (formData.get("shopHours") as string)?.trim() || "",
     },
     update: {
       shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
       shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
       shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
+      shopHours: (formData.get("shopHours") as string)?.trim() || "",
     },
   });
 

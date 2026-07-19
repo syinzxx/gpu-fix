@@ -48,6 +48,82 @@ async function main() {
     });
   }
 
+  // --- Checklist templates (pre/post-repair checks per device type) ---
+  const checklistTemplateCount = await db.checklistTemplate.count();
+  if (checklistTemplateCount === 0) {
+    const t = (deviceType: string, phase: string, items: string[]) =>
+      items.map((label, i) => ({ deviceType, phase, label, sortOrder: i }));
+
+    await db.checklistTemplate.createMany({
+      data: [
+        ...t("GPU", "PRE", [
+          "Fans spin freely",
+          "Visual PCB inspection",
+          "No artifacts on test bench",
+          "Memtest pass",
+          "Thermals recorded",
+        ]),
+        ...t("GPU", "POST", [
+          "Stress test 30min stable",
+          "Thermals within spec",
+          "Fans quiet",
+          "Ports tested",
+          "Cleaned",
+        ]),
+        ...t("LAPTOP", "PRE", [
+          "Powers on to BIOS",
+          "Keyboard & trackpad tested",
+          "Screen free of dead pixels/lines",
+          "Battery health checked",
+          "Visual chassis/hinge inspection",
+        ]),
+        ...t("LAPTOP", "POST", [
+          "Boots to OS reliably",
+          "Battery charges normally",
+          "Ports & Wi-Fi tested",
+          "Thermals within spec under load",
+          "Cleaned & reassembled",
+        ]),
+        ...t("PC", "PRE", [
+          "Powers on to BIOS",
+          "Visual inspection of components",
+          "Storage detected",
+          "Memtest pass",
+          "Thermals recorded",
+        ]),
+        ...t("PC", "POST", [
+          "Stress test stable",
+          "All drives detected",
+          "Ports tested",
+          "Cable management checked",
+          "Cleaned",
+        ]),
+        ...t("CONSOLE", "PRE", [
+          "Powers on",
+          "Disc drive tested (if applicable)",
+          "Controller pairing tested",
+          "Visual inspection for damage",
+        ]),
+        ...t("CONSOLE", "POST", [
+          "Boots to home screen reliably",
+          "Disc/output tested",
+          "Ports & Wi-Fi tested",
+          "Cleaned & reassembled",
+        ]),
+        ...t("OTHER", "PRE", [
+          "Powers on",
+          "Visual inspection for damage",
+          "Issue reproduced",
+        ]),
+        ...t("OTHER", "POST", [
+          "Function tested",
+          "Cleaned",
+          "Ready for pickup",
+        ]),
+      ],
+    });
+  }
+
   // --- Sample customer + ticket so the dashboard isn't empty ---
   const existing = await db.ticket.findFirst();
   if (!existing) {

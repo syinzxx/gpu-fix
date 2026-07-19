@@ -21,6 +21,10 @@ model User {
   assignedTickets Ticket[]     @relation("AssignedTech")
   createdTickets Ticket[]      @relation("CreatedBy")
   events         TicketEvent[]
+  paymentsReceived Payment[]   @relation("PaymentsReceived")
+  expensesCreated Expense[]    @relation("ExpensesCreated")
+  attachmentsUploaded Attachment[]          @relation("AttachmentsUploaded")
+  checklistItemsChecked TicketChecklistItem[] @relation("ChecklistCheckedBy")
 }
 
 model Customer {
@@ -64,15 +68,22 @@ model Ticket {
   partsUsed        TicketPart[]
   invoice          Invoice?
   whatsappLogs     WhatsappLog[]
+  payments         Payment[]
   warrantyDays     Int?
   isWarrantyReturn Boolean      @default(false)
   warrantyTicketId String?
+  intakeSignature  String? // PNG data URL captured at intake, shown only to staff
+  rating           Int? // 1-5, customer feedback submitted from the tracking page
+  ratingComment    String?
+  ratedAt          DateTime?
+  attachments      Attachment[]
+  checklistItems   TicketChecklistItem[]
 
   @@index([status])
   @@index([customerId])
 }
 
-// Timeline entries: STATUS_CHANGE | NOTE | ASSIGNMENT | CREATED
+// Timeline entries: STATUS_CHANGE | NOTE | ASSIGNMENT | CREATED | PAYMENT
 model TicketEvent {
   id          String   @id @default(cuid())
   ticketId    String
@@ -166,12 +177,45 @@ model Invoice {
   issuedAt    DateTime @default(now())
 }
 
+// Payments & deposits against a ticket. Method: CASH | CARD | INSTAPAY | WALLET.
+// Kind: DEPOSIT | PAYMENT | REFUND (refunds represent money returned to the customer).
+model Payment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  amount       Float
+  method       String   @default("CASH")
+  kind         String   @default("PAYMENT")
+  note         String?
+  receivedById String?
+  receivedBy   User?    @relation("PaymentsReceived", fields: [receivedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// Shop expenses for the daily/monthly cash summary.
+// Category: RENT | UTILITIES | PARTS | SALARIES | TRANSPORT | OTHER
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  category    String   @default("OTHER")
+  note        String?
+  date        DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation("ExpensesCreated", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+}
+
 // Status: SENT | FAILED | SKIPPED (skipped = WhatsApp not configured, manual send)
 model Settings {
   id          String @id @default("global")
   shopName    String @default("GPU Fix Shop")
   shopAddress String @default("")
   shopPhone   String @default("")
+  shopHours   String @default("")
 }
 
 model WhatsappLog {
@@ -184,4 +228,46 @@ model WhatsappLog {
   error       String?
   waMessageId String?  // Meta Cloud API message ID, used for webhook status correlation
   createdAt   DateTime @default(now())
+}
+
+// Photos attached to a ticket (intake condition, completed repair, etc).
+// Kind: INTAKE | COMPLETION | OTHER. isPublic controls visibility on the tracking page.
+model Attachment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  path        String // public URL path, e.g. /uploads/tickets/<ticketId>/<file>
+  kind        String   @default("INTAKE")
+  isPublic    Boolean  @default(false)
+  createdById String?
+  createdBy   User?    @relation("AttachmentsUploaded", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// Per-device-type checklist definitions, copied onto a ticket at creation time.
+// Phase: PRE | POST.
+model ChecklistTemplate {
+  id         String @id @default(cuid())
+  deviceType String
+  phase      String
+  label      String
+  sortOrder  Int    @default(0)
+}
+
+// A checklist item copied from ChecklistTemplate onto a specific ticket.
+model TicketChecklistItem {
+  id          String    @id @default(cuid())
+  ticketId    String
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  phase       String
+  label       String
+  checked     Boolean   @default(false)
+  checkedById String?
+  checkedBy   User?     @relation("ChecklistCheckedBy", fields: [checkedById], references: [id])
+  checkedAt   DateTime?
+  sortOrder   Int       @default(0)
+
+  @@index([ticketId])
 }

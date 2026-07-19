@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
+import { getT } from "@/lib/locale";
 import { Button, Input, Label, Card } from "@/components/ui";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t.metaLoginTitle,
+    robots: { index: false },
+  };
+}
 
 async function loginAction(formData: FormData) {
   "use server";

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { PrintButton } from "@/components/print-button";
-import { fmtDate, money } from "@/lib/utils";
+import { fmtDate, money, paymentsTotal } from "@/lib/utils";
 import { getSettings } from "@/lib/settings";
 import { getT } from "@/lib/locale";
 
@@ -21,6 +21,12 @@ export default async function InvoicePage({
           include: {
             customer: true,
             partsUsed: { include: { part: true } },
+            payments: { select: { amount: true, kind: true } },
+            checklistItems: {
+              where: { phase: "POST", checked: true },
+              orderBy: { sortOrder: "asc" },
+              select: { id: true, label: true },
+            },
           },
         },
       },
@@ -31,6 +37,8 @@ export default async function InvoicePage({
   if (!invoice) notFound();
 
   const { ticket } = invoice;
+  const totalPaid = paymentsTotal(ticket.payments);
+  const balanceDue = invoice.total - totalPaid;
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -129,7 +137,36 @@ export default async function InvoicePage({
             <span>{t.totalDue}</span>
             <span className="font-mono">{money(invoice.total)}</span>
           </div>
+          {totalPaid > 0 && (
+            <div className="flex justify-between text-emerald-700">
+              <span>{t.paidAmount}</span>
+              <span className="font-mono">{money(totalPaid)}</span>
+            </div>
+          )}
+          {balanceDue <= 0 ? (
+            <div className="mt-1 rounded-lg bg-emerald-50 py-1.5 text-center text-sm font-bold tracking-wide text-emerald-700 ring-1 ring-emerald-100">
+              {t.paidInFull}
+            </div>
+          ) : (
+            <div className="flex justify-between text-sm font-bold text-rose-600">
+              <span>{t.balanceDue}</span>
+              <span className="font-mono">{money(balanceDue)}</span>
+            </div>
+          )}
         </div>
+
+        {ticket.checklistItems.length > 0 && (
+          <div className="mt-6 border-t border-slate-100 pt-4">
+            <p className="silk-label text-slate-400">{t.qualityChecksPassed}</p>
+            <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+              {ticket.checklistItems.map((c) => (
+                <li key={c.id} className="flex items-center gap-1.5">
+                  <span className="text-emerald-600">✓</span> {c.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <p className="mt-8 border-t border-slate-100 pt-4 text-center text-xs text-slate-400">
           {t.paymentDue}

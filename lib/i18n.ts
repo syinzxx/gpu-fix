@@ -10,6 +10,7 @@ export const translations = {
     suppliers: "Suppliers",
     customers: "Customers",
     reports: "Reports",
+    expenses: "Expenses",
     staff: "Staff",
     settings: "Settings",
     signOut: "Sign out",
@@ -30,7 +31,11 @@ export const translations = {
     queuePosition: "Queue position",
     estCompletion: "Est. completion",
     repairQuote: "Repair quote — waiting for your approval",
-    quoteApproval: "Reply on WhatsApp or call us to approve or decline the repair.",
+    quoteApproval: "Approve or decline below, or reply on WhatsApp to confirm.",
+    approveQuote: "Approve",
+    declineQuote: "Decline",
+    confirmApproveQuote: "Approve this repair quote?",
+    confirmDeclineQuote: "Decline this repair quote?",
     readyPickupMsg: "Ready for pickup!",
     bringTicket: "Bring your ticket code — payment is collected in-store.",
     progress: "Progress",
@@ -41,6 +46,10 @@ export const translations = {
     ticketNotFound: "We couldn't find that ticket",
     checkCode: "Double-check the code on your receipt — it looks like",
     tryAnother: "Try another code",
+    rateExperience: "Rate your experience",
+    ratingCommentPlaceholder: "Add a comment (optional)",
+    submitRatingBtn: "Submit rating",
+    thanksForRating: "Thanks for your feedback!",
 
     // Invoice
     issuedOn: "Issued",
@@ -57,6 +66,13 @@ export const translations = {
     paymentDue: "Payment due at pickup. Thank you for your business!",
     backToTicket: "← Back to ticket",
     invoice: "Invoice",
+    paidAmount: "Paid",
+    balanceDue: "Balance due",
+    paidInFull: "PAID",
+    qualityChecksPassed: "Quality checks passed",
+
+    // Photos (tracking page)
+    photos: "Photos",
 
     // Ticket detail
     moveForward: "Move ticket forward",
@@ -110,7 +126,97 @@ export const translations = {
     shopName: "Shop name",
     address: "Address",
     phone: "Phone",
+    hours: "Hours",
+    hoursHint: "Shown to customers on the tracking page and homepage.",
     saveSettings: "Save settings",
+
+    // Hero / landing
+    heroTitleLine1: "Expert GPU repair,",
+    heroTitleAccent: "done right.",
+    heroSubtitle: "Enter your ticket code to see exactly where your repair is — status, queue position, and cost, updated live.",
+    ticketCodeLabel: "Ticket code",
+    ticketCodePlaceholder: "e.g. GPU-4F7K2",
+    trackBtn: "Track repair",
+    staffMemberPrompt: "Staff member?",
+    signInArrow: "Sign in →",
+
+    // Header / footer
+    navSignIn: "Sign in",
+    footerTagline: "GPU repair, done right.",
+    footerTrackRepair: "Track repair",
+    footerStaffSignIn: "Staff sign in",
+
+    // Services
+    servicesKicker: "What we repair",
+    servicesTitle: "Services",
+    servicesSubtitle: "From black screens to bent pins — we diagnose it and fix it right.",
+    svcNoDisplayTitle: "No display / artifacting",
+    svcNoDisplayDesc: "Black screen, garbled image, or visual artifacts — diagnosed and fixed.",
+    svcVramTitle: "VRAM replacement",
+    svcVramDesc: "Faulty memory chips replaced or reballed to restore stability.",
+    svcReballingTitle: "GPU core reballing",
+    svcReballingDesc: "Precision reflow and reballing to fix GPU core failures.",
+    svcThermalTitle: "Fan & thermal service",
+    svcThermalDesc: "Repaste, pad replacement, and fan repair to fix overheating.",
+    svcVbiosTitle: "VBIOS repair & flashing",
+    svcVbiosDesc: "Corrupted or mismatched VBIOS reflashed to get your card booting again.",
+    svcWaterTitle: "Water damage / corrosion treatment",
+    svcWaterDesc: "Cleaning, corrosion removal, and component-level repair for liquid damage.",
+
+    // How it works
+    howKicker: "How it works",
+    howTitle: "From drop-off to pickup",
+    step1Title: "Drop off your card",
+    step1Desc: "Bring your GPU to our shop and get a ticket code.",
+    step2Title: "Free diagnosis",
+    step2Desc: "We inspect it and identify the fault at no charge.",
+    step3Title: "Quote via WhatsApp",
+    step3Desc: "We send a quote on WhatsApp — approve it online whenever you're ready.",
+    step4Title: "Expert repair",
+    step4Desc: "Our technicians carry out the repair with quality parts.",
+    step5Title: "Track online anytime",
+    step5Desc: "Follow your repair's status and queue position live.",
+    step6Title: "Pickup & warranty",
+    step6Desc: "Collect your card, backed by our repair warranty.",
+
+    // Trust
+    trustKicker: "Why trust us",
+    trustTitle: "Built on experience",
+    trustWarrantyTitle: "Warranty on repairs",
+    trustWarrantyDesc: "Every repair is covered by a warranty for your peace of mind.",
+    trustPartsTitle: "Quality parts from stock",
+    trustPartsDesc: "We use tested, quality components kept in stock.",
+    trustUpdatesTitle: "Live WhatsApp + online status updates",
+    trustUpdatesDesc: "Stay informed every step of the way, on WhatsApp and online.",
+
+    // Contact
+    contactKicker: "Get in touch",
+    contactTitle: "Contact us",
+    contactAddressLabel: "Address",
+    contactPhoneLabel: "Phone",
+    contactHoursLabel: "Hours",
+    contactWhatsappCta: "Chat on WhatsApp",
+
+    // WhatsApp
+    whatsappPrefill: "Hi! I'd like to ask about a GPU repair.",
+    whatsappAriaLabel: "Chat with us on WhatsApp",
+
+    // Track page (extra)
+    questionsAtPhone: "Questions? Contact us at {phone}",
+
+    // Accessibility
+    oneStar: "1 star",
+    nStars: "{n} stars",
+    photoAltIntake: "Photo of your card at intake",
+    photoAltCompletion: "Photo of the completed repair",
+    photoAltOther: "Repair photo",
+
+    // Metadata
+    metaHomeTitle: "GPU Repair Tracking | GPU Fix Shop",
+    metaHomeDescription: "Professional GPU repair services — no display fixes, VRAM replacement, GPU core reballing, VBIOS repair and flashing, and water damage treatment. Track your graphics card repair status online in real time.",
+    metaLoginTitle: "Staff sign in",
+    metaTrackTitle: "Track your repair",
+    metaTrackDescription: "Check your GPU repair status, queue position, and cost — updated live.",
 
     // Reports
     analytics: "analytics",
@@ -123,6 +229,13 @@ export const translations = {
     openTicketsCol: "Open tickets",
     avgDaysToClose: "Avg days to close",
     noTechs: "No technicians found.",
+    avgRating: "Avg rating",
+    ratingsLabel: "ratings",
+    cashFlow: "cash flow",
+    thisMonth: "This month",
+    incomeThisMonth: "Income (payments)",
+    expensesThisMonth: "Expenses",
+    netThisMonth: "Net",
 
     // Common
     save: "Save",
@@ -144,6 +257,7 @@ export const translations = {
     suppliers: "الموردون",
     customers: "العملاء",
     reports: "التقارير",
+    expenses: "المصروفات",
     staff: "الموظفون",
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
@@ -164,7 +278,11 @@ export const translations = {
     queuePosition: "الموقع في الطابور",
     estCompletion: "الموعد المتوقع",
     repairQuote: "عرض سعر الإصلاح — بانتظار موافقتك",
-    quoteApproval: "ردّ على واتساب أو اتصل بنا للموافقة أو الرفض.",
+    quoteApproval: "وافق أو ارفض أدناه، أو ردّ على واتساب للتأكيد.",
+    approveQuote: "موافقة",
+    declineQuote: "رفض",
+    confirmApproveQuote: "هل توافق على عرض السعر هذا؟",
+    confirmDeclineQuote: "هل ترفض عرض السعر هذا؟",
     readyPickupMsg: "جاهز للاستلام! 🎉",
     bringTicket: "أحضر رمز التذكرة — يُسدَّد الدفع داخل المتجر.",
     progress: "التقدم",
@@ -175,6 +293,10 @@ export const translations = {
     ticketNotFound: "لم نتمكن من العثور على هذه التذكرة",
     checkCode: "تحقق من الرمز الموجود في إيصالك — يبدو كالتالي",
     tryAnother: "جرّب رمزاً آخر",
+    rateExperience: "قيّم تجربتك",
+    ratingCommentPlaceholder: "أضف تعليقاً (اختياري)",
+    submitRatingBtn: "إرسال التقييم",
+    thanksForRating: "شكراً على ملاحظاتك!",
 
     // Invoice
     issuedOn: "بتاريخ",
@@ -191,6 +313,13 @@ export const translations = {
     paymentDue: "الدفع عند الاستلام. شكراً لتعاملك معنا!",
     backToTicket: "← العودة للتذكرة",
     invoice: "الفاتورة",
+    paidAmount: "المدفوع",
+    balanceDue: "المبلغ المتبقي",
+    paidInFull: "مدفوع بالكامل",
+    qualityChecksPassed: "فحوصات الجودة المجتازة",
+
+    // Photos (tracking page)
+    photos: "الصور",
 
     // Ticket detail
     moveForward: "انقل التذكرة للأمام",
@@ -244,7 +373,97 @@ export const translations = {
     shopName: "اسم المتجر",
     address: "العنوان",
     phone: "الهاتف",
+    hours: "مواعيد العمل",
+    hoursHint: "تظهر للعملاء في صفحة التتبع والصفحة الرئيسية.",
     saveSettings: "حفظ الإعدادات",
+
+    // Hero / landing
+    heroTitleLine1: "إصلاح احترافي لكروت الشاشة،",
+    heroTitleAccent: "بإتقان تام.",
+    heroSubtitle: "أدخل رمز التذكرة لتشاهد بالضبط مكان إصلاح جهازك — الحالة، الترتيب في الطابور، والتكلفة، محدّثة لحظياً.",
+    ticketCodeLabel: "رمز التذكرة",
+    ticketCodePlaceholder: "مثال: GPU-4F7K2",
+    trackBtn: "تتبع الإصلاح",
+    staffMemberPrompt: "أنت موظف؟",
+    signInArrow: "تسجيل الدخول ←",
+
+    // Header / footer
+    navSignIn: "تسجيل الدخول",
+    footerTagline: "إصلاح كروت الشاشة، بإتقان تام.",
+    footerTrackRepair: "تتبع الإصلاح",
+    footerStaffSignIn: "تسجيل دخول الموظفين",
+
+    // Services
+    servicesKicker: "ماذا نصلح",
+    servicesTitle: "خدماتنا",
+    servicesSubtitle: "من الشاشة السوداء إلى الأعطال الدقيقة — نشخّص المشكلة ونصلحها بإتقان.",
+    svcNoDisplayTitle: "عدم ظهور الصورة / تشويش الشاشة",
+    svcNoDisplayDesc: "شاشة سوداء أو صورة مشوّشة أو تشويه بصري — يتم تشخيصه وإصلاحه.",
+    svcVramTitle: "استبدال ذاكرة VRAM",
+    svcVramDesc: "استبدال أو إعادة لحام شرائح الذاكرة التالفة لاستعادة استقرار الجهاز.",
+    svcReballingTitle: "إعادة لحام نواة كرت الشاشة",
+    svcReballingDesc: "إعادة تدفئة ولحام دقيق لمعالجة أعطال نواة كرت الشاشة.",
+    svcThermalTitle: "صيانة المروحة والتبريد",
+    svcThermalDesc: "تغيير المعجون الحراري والوسادات وإصلاح المروحة لعلاج ارتفاع الحرارة.",
+    svcVbiosTitle: "إصلاح وتحديث VBIOS",
+    svcVbiosDesc: "إعادة كتابة VBIOS التالف أو غير المتوافق لإعادة تشغيل كرت الشاشة.",
+    svcWaterTitle: "معالجة أضرار المياه / الصدأ",
+    svcWaterDesc: "تنظيف وإزالة الصدأ وإصلاح على مستوى المكونات لأضرار السوائل.",
+
+    // How it works
+    howKicker: "كيف تتم العملية",
+    howTitle: "من الاستلام حتى التسليم",
+    step1Title: "أحضر كرت الشاشة",
+    step1Desc: "أحضر جهازك إلى متجرنا واحصل على رمز تذكرة.",
+    step2Title: "تشخيص مجاني",
+    step2Desc: "نفحص الجهاز ونحدد العطل دون أي تكلفة.",
+    step3Title: "عرض سعر عبر واتساب",
+    step3Desc: "نرسل لك عرض السعر على واتساب — وافق عليه أونلاين في أي وقت يناسبك.",
+    step4Title: "إصلاح احترافي",
+    step4Desc: "يقوم فنيونا بالإصلاح باستخدام قطع غيار عالية الجودة.",
+    step5Title: "تتبع أونلاين في أي وقت",
+    step5Desc: "تابع حالة إصلاحك وترتيبك في الطابور لحظياً.",
+    step6Title: "الاستلام والضمان",
+    step6Desc: "استلم جهازك مع ضمان على الإصلاح.",
+
+    // Trust
+    trustKicker: "لماذا تثق بنا",
+    trustTitle: "خبرة تستحق الثقة",
+    trustWarrantyTitle: "ضمان على الإصلاحات",
+    trustWarrantyDesc: "كل إصلاح مغطى بضمان لراحة بالك.",
+    trustPartsTitle: "قطع غيار عالية الجودة من المخزون",
+    trustPartsDesc: "نستخدم مكونات مختبرة وعالية الجودة متوفرة لدينا.",
+    trustUpdatesTitle: "تحديثات لحظية عبر واتساب والموقع",
+    trustUpdatesDesc: "ابقَ على اطلاع في كل خطوة، عبر واتساب وأونلاين.",
+
+    // Contact
+    contactKicker: "تواصل معنا",
+    contactTitle: "اتصل بنا",
+    contactAddressLabel: "العنوان",
+    contactPhoneLabel: "الهاتف",
+    contactHoursLabel: "مواعيد العمل",
+    contactWhatsappCta: "راسلنا على واتساب",
+
+    // WhatsApp
+    whatsappPrefill: "مرحباً! أرغب في الاستفسار عن إصلاح كرت الشاشة.",
+    whatsappAriaLabel: "تواصل معنا عبر واتساب",
+
+    // Track page (extra)
+    questionsAtPhone: "أسئلة؟ تواصل معنا على {phone}",
+
+    // Accessibility
+    oneStar: "نجمة واحدة",
+    nStars: "{n} نجوم",
+    photoAltIntake: "صورة جهازك عند الاستلام",
+    photoAltCompletion: "صورة الإصلاح بعد الانتهاء",
+    photoAltOther: "صورة الإصلاح",
+
+    // Metadata
+    metaHomeTitle: "تتبع إصلاح كرت الشاشة | GPU Fix Shop",
+    metaHomeDescription: "خدمات إصلاح احترافية لكروت الشاشة — إصلاح مشاكل عدم ظهور الصورة، استبدال VRAM، إعادة لحام النواة، إصلاح VBIOS، والمزيد. تتبع حالة إصلاح كرت الشاشة أونلاين لحظياً.",
+    metaLoginTitle: "تسجيل دخول الموظفين",
+    metaTrackTitle: "تتبع إصلاحك",
+    metaTrackDescription: "تحقق من حالة إصلاح كرت الشاشة، ترتيبك في الطابور، والتكلفة — محدّثة لحظياً.",
 
     // Reports
     analytics: "تحليلات",
@@ -257,6 +476,13 @@ export const translations = {
     openTicketsCol: "التذاكر المفتوحة",
     avgDaysToClose: "متوسط أيام الإغلاق",
     noTechs: "لا يوجد فنيون.",
+    avgRating: "متوسط التقييم",
+    ratingsLabel: "تقييمات",
+    cashFlow: "التدفق النقدي",
+    thisMonth: "هذا الشهر",
+    incomeThisMonth: "الإيرادات (المدفوعات)",
+    expensesThisMonth: "المصروفات",
+    netThisMonth: "الصافي",
 
     // Common
     save: "حفظ",

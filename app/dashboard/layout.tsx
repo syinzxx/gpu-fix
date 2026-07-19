@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { user } = session;
   const [settings, t, locale] = await Promise.all([getSettings(), getT(), getLocale()]);
 
-  const NAV: (NavItem & { adminOnly?: boolean })[] = [
+  const NAV: (NavItem & { adminOnly?: boolean; roles?: string[] })[] = [
     { href: "/dashboard", label: t.overview, icon: "◈" },
     { href: "/dashboard/tickets", label: t.tickets, icon: "▤" },
     { href: "/dashboard/inventory", label: t.inventory, icon: "▦" },
@@ -19,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: "/dashboard/suppliers", label: t.suppliers, icon: "⬒" },
     { href: "/dashboard/customers", label: t.customers, icon: "◔" },
     { href: "/dashboard/reports", label: t.reports, icon: "◫" },
+    { href: "/dashboard/expenses", label: t.expenses, icon: "▧", roles: ["ADMIN", "RECEPTIONIST"] },
     { href: "/dashboard/users", label: t.staff, icon: "◍", adminOnly: true },
     { href: "/dashboard/settings", label: t.settings, icon: "⚙", adminOnly: true },
   ];
@@ -36,9 +37,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         <DashboardNav
-          items={NAV.filter((item) => !item.adminOnly || user.role === "ADMIN").map(
-            ({ adminOnly: _adminOnly, ...item }) => item
-          )}
+          items={NAV.filter(
+            (item) => (!item.adminOnly || user.role === "ADMIN") && (!item.roles || item.roles.includes(user.role))
+          ).map(({ href, label, icon }) => ({ href, label, icon }))}
         />
 
         <div className="border-t border-slate-100 p-4">

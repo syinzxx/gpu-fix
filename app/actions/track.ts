@@ -32,18 +32,18 @@ export async function approveQuote(formData: FormData) {
     where: { code },
     include: { customer: { select: { name: true, whatsapp: true } } },
   });
-  // Only act from QUOTE_SENT — wrong state (or unknown code) is a silent no-op.
-  if (!ticket || ticket.status !== "QUOTE_SENT") return;
+  // Only act from WAITING_FOR_QUOTE_APPROVAL — wrong state (or unknown code) is a silent no-op.
+  if (!ticket || ticket.status !== "WAITING_FOR_QUOTE_APPROVAL") return;
 
   await db.ticket.update({
     where: { id: ticket.id },
     data: {
-      status: "QUOTE_APPROVED",
+      status: "WAITING_FOR_PARTS",
       events: {
         create: {
           type: "STATUS_CHANGE",
           fromStatus: ticket.status,
-          toStatus: "QUOTE_APPROVED",
+          toStatus: "WAITING_FOR_PARTS",
           isPublic: true,
           note: "Approved by customer via tracking page",
           createdById: null,
@@ -57,7 +57,7 @@ export async function approveQuote(formData: FormData) {
     to: ticket.customer.whatsapp,
     customerName: ticket.customer.name,
     code: ticket.code,
-    status: "QUOTE_APPROVED",
+    status: "WAITING_FOR_PARTS",
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
   });
@@ -75,17 +75,17 @@ export async function rejectQuote(formData: FormData) {
     where: { code },
     include: { customer: { select: { name: true, whatsapp: true } } },
   });
-  if (!ticket || ticket.status !== "QUOTE_SENT") return;
+  if (!ticket || ticket.status !== "WAITING_FOR_QUOTE_APPROVAL") return;
 
   await db.ticket.update({
     where: { id: ticket.id },
     data: {
-      status: "QUOTE_REJECTED",
+      status: "DIAGNOSING",
       events: {
         create: {
           type: "STATUS_CHANGE",
           fromStatus: ticket.status,
-          toStatus: "QUOTE_REJECTED",
+          toStatus: "DIAGNOSING",
           isPublic: true,
           note: "Declined by customer via tracking page",
           createdById: null,
@@ -99,7 +99,7 @@ export async function rejectQuote(formData: FormData) {
     to: ticket.customer.whatsapp,
     customerName: ticket.customer.name,
     code: ticket.code,
-    status: "QUOTE_REJECTED",
+    status: "DIAGNOSING",
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
   });

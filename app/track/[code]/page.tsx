@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import {
-  STATUS_LABELS,
+  statusLabelsFor,
   STATUS_COLORS,
   ACTIVE_STATUSES,
   type TicketStatus,
@@ -62,19 +62,7 @@ export default async function TrackPage({
     getLocale(),
   ]);
 
-  // Arabic status labels
-  const arStatusLabels: Record<TicketStatus, string> = {
-    RECEIVED: "مستلم",
-    DIAGNOSING: "قيد التشخيص",
-    QUOTE_SENT: "تم إرسال العرض",
-    QUOTE_APPROVED: "تمت الموافقة",
-    QUOTE_REJECTED: "تم الرفض",
-    IN_REPAIR: "قيد الإصلاح",
-    READY_FOR_PICKUP: "جاهز للاستلام",
-    CLOSED: "مغلق",
-  };
-  const statusLabel = (s: TicketStatus) =>
-    locale === "ar" ? arStatusLabels[s] : STATUS_LABELS[s];
+  const statusLabel = (s: TicketStatus) => statusLabelsFor(locale)[s];
 
   if (!ticket) {
     return (
@@ -172,7 +160,7 @@ export default async function TrackPage({
           </div>
         </div>
 
-        {status === "QUOTE_SENT" && ticket.quoteAmount != null && (
+        {status === "WAITING_FOR_QUOTE_APPROVAL" && ticket.quoteAmount != null && (
           <div className="mt-4 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100">
             <p className="text-xs font-bold text-amber-700">{t.repairQuote}</p>
             <p className="mt-1 font-display text-3xl font-bold tracking-tight text-amber-800">

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import {
   STATUS_FLOW,
-  STATUS_LABELS,
+  statusLabelsFor,
   ACTIVE_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_KINDS,
@@ -28,6 +28,7 @@ import { toggleChecklistItem, loadChecklist } from "@/app/actions/checklists";
 import { Button, Input, Label, Select, Textarea, Card, CardHeader, Table, Th, Td, Badge, EmptyState } from "@/components/ui";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
 import { fmtDate, fmtDateTime, money, paymentsTotal, cn } from "@/lib/utils";
+import { getLocale, getT } from "@/lib/locale";
 
 export default async function TicketDetailPage({
   params,
@@ -36,7 +37,7 @@ export default async function TicketDetailPage({
 }) {
   const { id } = await params;
 
-  const [ticket, session] = await Promise.all([
+  const [ticket, session, t, locale] = await Promise.all([
     db.ticket.findUnique({
       where: { id },
       include: {
@@ -53,9 +54,12 @@ export default async function TicketDetailPage({
       },
     }),
     auth(),
+    getT(),
+    getLocale(),
   ]);
   if (!ticket) notFound();
 
+  const statusLabels = statusLabelsFor(locale);
   const isAdmin = session?.user?.role === "ADMIN";
   const totalPaid = paymentsTotal(ticket.payments);
   const preChecks = ticket.checklistItems.filter((c) => c.phase === "PRE");
@@ -92,20 +96,20 @@ export default async function TicketDetailPage({
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
             {ticket.isWarrantyReturn && (
-              <Badge className="bg-amber-100 text-amber-700">warranty return</Badge>
+              <Badge className="bg-amber-100 text-amber-700">{t.warrantyReturn}</Badge>
             )}
           </div>
           <p className="mt-1 text-sm text-slate-500">
             {ticket.deviceType} · {ticket.brand} {ticket.model}
             {ticket.serialNumber && ` · SN ${ticket.serialNumber}`}
-            {isActive && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} in queue</span></>}
+            {isActive && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} {t.queueIn}</span></>}
             {ticket.isWarrantyReturn && ticket.warrantyTicketId && (
-              <> · <span className="text-amber-600">ref: {ticket.warrantyTicketId}</span></>
+              <> · <span className="text-amber-600">{t.ref} {ticket.warrantyTicketId}</span></>
             )}
           </p>
           {ticket.rating != null && (
             <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-1 ring-1 ring-amber-100">
-              <span className="text-sm tracking-tight text-amber-500" aria-label={`${ticket.rating} out of 5 stars`}>
+              <span className="text-sm tracking-tight text-amber-500" aria-label={t.nOutOf5Stars.replace("{n}", String(ticket.rating))}>
                 {"★".repeat(ticket.rating)}
                 <span className="text-amber-200">{"★".repeat(5 - ticket.rating)}</span>
               </span>
@@ -120,21 +124,21 @@ export default async function TicketDetailPage({
             href={`/dashboard/tickets/${ticket.id}/label`}
             className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
           >
-            Print label
+            {t.printLabel}
           </Link>
           <Link
             href={`/track/${ticket.code}`}
             target="_blank"
             className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
           >
-            Customer view ↗
+            {t.customerView}
           </Link>
           {ticket.invoice && (
             <Link
               href={`/dashboard/invoices/${ticket.invoice.id}`}
               className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
             >
-              Invoice {ticket.invoice.number}
+              {t.invoice} {ticket.invoice.number}
             </Link>
           )}
         </div>
@@ -143,26 +147,26 @@ export default async function TicketDetailPage({
       {/* Status actions */}
       {nextStatuses.length > 0 && (
         <Card className="p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Move ticket forward</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{t.moveForward}</p>
           <div className="flex flex-wrap items-end gap-3">
             {nextStatuses.map((next) => (
               <form key={next} action={changeStatus} className="flex items-end gap-2">
                 <input type="hidden" name="ticketId" value={ticket.id} />
                 <input type="hidden" name="toStatus" value={next} />
-                {next === "QUOTE_SENT" && (
+                {next === "WAITING_FOR_QUOTE_APPROVAL" && (
                   <div>
-                    <Label>Quote amount</Label>
+                    <Label>{t.quoteAmountLabel}</Label>
                     <Input name="quoteAmount" type="number" step="0.01" min="0" required
                       defaultValue={ticket.quoteAmount ?? ""} className="w-32" />
                   </div>
                 )}
-                <Button type="submit" variant={next === "QUOTE_REJECTED" ? "danger" : "primary"}>
-                  → {STATUS_LABELS[next]}
+                <Button type="submit" variant="primary">
+                  → {statusLabels[next]}
                 </Button>
               </form>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-400">Each change is logged and sent to the customer on WhatsApp.</p>
+          <p className="mt-2 text-xs text-slate-400">{t.statusLoggedWhatsapp}</p>
         </Card>
       )}
 
@@ -170,24 +174,24 @@ export default async function TicketDetailPage({
         {/* Left column */}
         <div className="space-y-5 lg:col-span-2">
           <Card>
-            <CardHeader title="Issue" />
+            <CardHeader title={t.issue} />
             <div className="p-5 text-sm text-slate-900">
               <p className="whitespace-pre-wrap">{ticket.issue}</p>
               {ticket.accessories && (
-                <p className="mt-3 text-xs text-slate-400">Accessories: {ticket.accessories}</p>
+                <p className="mt-3 text-xs text-slate-400">{t.accessories} {ticket.accessories}</p>
               )}
             </div>
           </Card>
 
           {/* Pre/post-repair checklists */}
           <Card>
-            <CardHeader title="Pre-repair checks" />
+            <CardHeader title={t.preRepairChecks} />
             {preChecks.length === 0 ? (
               <div className="p-5">
-                <EmptyState message="No checklist loaded yet." />
+                <EmptyState message={t.noChecklistYet} />
                 <form action={loadChecklist} className="mt-2 flex justify-center">
                   <input type="hidden" name="ticketId" value={ticket.id} />
-                  <Button type="submit" size="sm" variant="secondary">Load checklist</Button>
+                  <Button type="submit" size="sm" variant="secondary">{t.loadChecklist}</Button>
                 </form>
               </div>
             ) : (
@@ -207,7 +211,7 @@ export default async function TicketDetailPage({
                     <form action={toggleChecklistItem}>
                       <input type="hidden" name="id" value={item.id} />
                       <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
-                        {item.checked ? "✓ Checked" : "Mark done"}
+                        {item.checked ? t.checkedLabel : t.markDone}
                       </Button>
                     </form>
                   </li>
@@ -217,13 +221,13 @@ export default async function TicketDetailPage({
           </Card>
 
           <Card>
-            <CardHeader title="Post-repair checks" />
+            <CardHeader title={t.postRepairChecks} />
             {postChecks.length === 0 ? (
               <div className="p-5">
-                <EmptyState message="No checklist loaded yet." />
+                <EmptyState message={t.noChecklistYet} />
                 <form action={loadChecklist} className="mt-2 flex justify-center">
                   <input type="hidden" name="ticketId" value={ticket.id} />
-                  <Button type="submit" size="sm" variant="secondary">Load checklist</Button>
+                  <Button type="submit" size="sm" variant="secondary">{t.loadChecklist}</Button>
                 </form>
               </div>
             ) : (
@@ -243,7 +247,7 @@ export default async function TicketDetailPage({
                     <form action={toggleChecklistItem}>
                       <input type="hidden" name="id" value={item.id} />
                       <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
-                        {item.checked ? "✓ Checked" : "Mark done"}
+                        {item.checked ? t.checkedLabel : t.markDone}
                       </Button>
                     </form>
                   </li>
@@ -254,11 +258,11 @@ export default async function TicketDetailPage({
 
           {/* Photos */}
           <Card>
-            <CardHeader title="Photos" />
+            <CardHeader title={t.photos} />
             <form action={uploadAttachment} className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div className="min-w-[180px] flex-1">
-                <Label>Photo</Label>
+                <Label>{t.photo}</Label>
                 <input
                   type="file"
                   name="file"
@@ -268,21 +272,21 @@ export default async function TicketDetailPage({
                 />
               </div>
               <div className="w-36">
-                <Label>Kind</Label>
+                <Label>{t.kind}</Label>
                 <Select name="kind" defaultValue="INTAKE">
-                  <option value="INTAKE">Intake</option>
-                  <option value="COMPLETION">Completion</option>
-                  <option value="OTHER">Other</option>
+                  <option value="INTAKE">{t.intake}</option>
+                  <option value="COMPLETION">{t.completion}</option>
+                  <option value="OTHER">{t.other}</option>
                 </Select>
               </div>
               <label className="flex items-center gap-1.5 pb-2 text-xs text-slate-500">
                 <input type="checkbox" name="isPublic" className="accent-violet-600" />
-                Visible to customer
+                {t.visibleToCustomerShort}
               </label>
-              <Button type="submit" variant="secondary">Upload</Button>
+              <Button type="submit" variant="secondary">{t.upload}</Button>
             </form>
             {ticket.attachments.length === 0 ? (
-              <EmptyState message="No photos uploaded yet." />
+              <EmptyState message={t.noPhotosYet} />
             ) : (
               <div className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4">
                 {ticket.attachments.map((a) => (
@@ -293,7 +297,7 @@ export default async function TicketDetailPage({
                     </a>
                     <Badge className="absolute left-1 top-1 bg-white/90 text-slate-600">{a.kind}</Badge>
                     {a.isPublic && (
-                      <Badge className="absolute right-1 top-1 bg-emerald-100 text-emerald-700">public</Badge>
+                      <Badge className="absolute right-1 top-1 bg-emerald-100 text-emerald-700">{t.publicLabel}</Badge>
                     )}
                     {(isAdmin || a.createdById === session?.user?.id) && (
                       <form action={deleteAttachment} className="absolute bottom-1 right-1">
@@ -303,7 +307,7 @@ export default async function TicketDetailPage({
                           variant="ghost"
                           type="submit"
                           className="bg-white/90 backdrop-blur hover:bg-white"
-                          title="Delete photo"
+                          title={t.deletePhoto}
                         >
                           ✕
                         </Button>
@@ -317,13 +321,13 @@ export default async function TicketDetailPage({
 
           {/* Parts used */}
           <Card>
-            <CardHeader title="Parts used" />
+            <CardHeader title={t.partsUsed} />
             {ticket.partsUsed.length === 0 ? (
-              <EmptyState message="No parts consumed yet." />
+              <EmptyState message={t.noPartsYet} />
             ) : (
               <Table>
                 <thead>
-                  <tr><Th>Part</Th><Th>Qty</Th><Th>Unit price</Th><Th>Total</Th><Th></Th></tr>
+                  <tr><Th>{t.part}</Th><Th>{t.qty}</Th><Th>{t.unitPrice}</Th><Th>{t.total}</Th><Th></Th></tr>
                 </thead>
                 <tbody>
                   {ticket.partsUsed.map((tp) => (
@@ -336,14 +340,14 @@ export default async function TicketDetailPage({
                         {!ticket.invoice && (
                           <form action={removePartFromTicket}>
                             <input type="hidden" name="ticketPartId" value={tp.id} />
-                            <Button size="sm" variant="ghost" type="submit" title="Remove and restock">✕</Button>
+                            <Button size="sm" variant="ghost" type="submit" title={t.removeRestock}>✕</Button>
                           </form>
                         )}
                       </Td>
                     </tr>
                   ))}
                   <tr>
-                    <Td colSpan={3} className="text-right font-medium">Parts total</Td>
+                    <Td colSpan={3} className="text-right font-medium">{t.partsTotal}</Td>
                     <Td className="font-bold">{money(partsTotal)}</Td>
                     <Td></Td>
                   </tr>
@@ -354,35 +358,35 @@ export default async function TicketDetailPage({
               <form action={addPartToTicket} className="flex items-end gap-2 border-t border-slate-100 p-4">
                 <input type="hidden" name="ticketId" value={ticket.id} />
                 <div className="flex-1">
-                  <Label>Add part (decrements stock)</Label>
+                  <Label>{t.addPart}</Label>
                   <Select name="partId" required defaultValue="">
-                    <option value="" disabled>Select a part…</option>
+                    <option value="" disabled>{t.selectPart}</option>
                     {parts.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} — {p.quantity} in stock — {money(p.sellPrice)}
+                        {p.name} — {p.quantity} {t.inStock} — {money(p.sellPrice)}
                       </option>
                     ))}
                   </Select>
                 </div>
                 <div className="w-20">
-                  <Label>Qty</Label>
+                  <Label>{t.qty}</Label>
                   <Input name="quantity" type="number" min="1" defaultValue="1" required />
                 </div>
-                <Button type="submit" variant="secondary">Add</Button>
+                <Button type="submit" variant="secondary">{t.add}</Button>
               </form>
             )}
           </Card>
 
           {/* Payments */}
           <Card>
-            <CardHeader title="Payments" />
+            <CardHeader title={t.payments} />
             {ticket.payments.length === 0 ? (
-              <EmptyState message="No payments recorded yet." />
+              <EmptyState message={t.noPaymentsYet} />
             ) : (
               <Table>
                 <thead>
                   <tr>
-                    <Th>Amount</Th><Th>Method</Th><Th>Kind</Th><Th>Received by</Th><Th>When</Th><Th></Th>
+                    <Th>{t.amount}</Th><Th>{t.method}</Th><Th>{t.kind}</Th><Th>{t.receivedByCol}</Th><Th>{t.when}</Th><Th></Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -402,14 +406,14 @@ export default async function TicketDetailPage({
                         {isAdmin && (
                           <form action={deleteVoidPayment}>
                             <input type="hidden" name="id" value={p.id} />
-                            <Button size="sm" variant="ghost" type="submit" title="Delete payment">✕</Button>
+                            <Button size="sm" variant="ghost" type="submit" title={t.deletePayment}>✕</Button>
                           </form>
                         )}
                       </Td>
                     </tr>
                   ))}
                   <tr>
-                    <Td colSpan={4} className="text-right font-medium">Total paid</Td>
+                    <Td colSpan={4} className="text-right font-medium">{t.totalPaid}</Td>
                     <Td colSpan={2} className="font-bold">{money(totalPaid)}</Td>
                   </tr>
                 </tbody>
@@ -418,11 +422,11 @@ export default async function TicketDetailPage({
             <form action={recordPayment} className="flex flex-wrap items-end gap-2 border-t border-slate-100 p-4">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div className="w-28">
-                <Label>Amount</Label>
+                <Label>{t.amount}</Label>
                 <Input name="amount" type="number" step="0.01" min="0.01" required />
               </div>
               <div className="w-32">
-                <Label>Method</Label>
+                <Label>{t.method}</Label>
                 <Select name="method" defaultValue="CASH">
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>{m}</option>
@@ -430,7 +434,7 @@ export default async function TicketDetailPage({
                 </Select>
               </div>
               <div className="w-32">
-                <Label>Kind</Label>
+                <Label>{t.kind}</Label>
                 <Select name="kind" defaultValue="PAYMENT">
                   {PAYMENT_KINDS.map((k) => (
                     <option key={k} value={k}>{k}</option>
@@ -438,26 +442,26 @@ export default async function TicketDetailPage({
                 </Select>
               </div>
               <div className="min-w-[140px] flex-1">
-                <Label>Note</Label>
-                <Input name="note" placeholder="Optional" />
+                <Label>{t.note}</Label>
+                <Input name="note" placeholder={t.optional} />
               </div>
-              <Button type="submit" variant="secondary">Record</Button>
+              <Button type="submit" variant="secondary">{t.record}</Button>
             </form>
           </Card>
 
           {/* Timeline + notes */}
           <Card>
-            <CardHeader title="Timeline & notes" />
+            <CardHeader title={t.timelineNotes} />
             <form action={addNote} className="flex items-start gap-2 border-b border-slate-100 p-4">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div className="flex-1">
-                <Textarea name="note" rows={2} required placeholder="Add a repair note…" />
+                <Textarea name="note" rows={2} required placeholder={t.addRepairNote} />
                 <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
                   <input type="checkbox" name="isPublic" className="accent-violet-600" />
-                  Visible to customer on tracking page
+                  {t.visibleToCustomer}
                 </label>
               </div>
-              <Button type="submit" variant="secondary">Post</Button>
+              <Button type="submit" variant="secondary">{t.post}</Button>
             </form>
             <ul className="divide-y divide-slate-100 p-2">
               {ticket.events.map((e) => (
@@ -469,8 +473,8 @@ export default async function TicketDetailPage({
                     <p className="text-sm text-slate-900">
                       {e.type === "STATUS_CHANGE" || e.type === "CREATED" ? (
                         <>
-                          {e.fromStatus ? `${STATUS_LABELS[e.fromStatus as TicketStatus]} → ` : "Ticket created — "}
-                          <span className="font-medium">{STATUS_LABELS[e.toStatus as TicketStatus]}</span>
+                          {e.fromStatus ? `${statusLabels[e.fromStatus as TicketStatus]} → ` : `${t.ticketCreated} — `}
+                          <span className="font-medium">{statusLabels[e.toStatus as TicketStatus]}</span>
                         </>
                       ) : (
                         <span className="whitespace-pre-wrap">{e.note}</span>
@@ -480,7 +484,7 @@ export default async function TicketDetailPage({
                       {fmtDateTime(e.createdAt)}
                       {e.createdBy && ` · ${e.createdBy.name}`}
                       {e.isPublic && e.type === "NOTE" && (
-                        <Badge className="ml-2 bg-emerald-100 text-emerald-700">public</Badge>
+                        <Badge className="ml-2 bg-emerald-100 text-emerald-700">{t.publicLabel}</Badge>
                       )}
                     </p>
                   </div>
@@ -493,12 +497,12 @@ export default async function TicketDetailPage({
         {/* Right column */}
         <div className="space-y-5">
           <Card>
-            <CardHeader title="Customer" />
+            <CardHeader title={t.customerCard} />
             <div className="space-y-1 p-5 text-sm">
               <p className="font-medium text-slate-900">{ticket.customer.name}</p>
               <p className="text-slate-500">{ticket.customer.phone}</p>
               {ticket.customer.whatsapp && ticket.customer.whatsapp !== ticket.customer.phone && (
-                <p className="text-slate-500">WA: {ticket.customer.whatsapp}</p>
+                <p className="text-slate-500">{t.whatsapp}: {ticket.customer.whatsapp}</p>
               )}
               {ticket.customer.email && <p className="text-slate-500">{ticket.customer.email}</p>}
             </div>
@@ -506,12 +510,12 @@ export default async function TicketDetailPage({
 
           {ticket.intakeSignature && (
             <Card>
-              <CardHeader title="Intake signature" />
+              <CardHeader title={t.intakeSignature} />
               <div className="p-5">
                 {/* eslint-disable-next-line @next/next/no-img-element -- staff-only view of a captured PNG data URL, not eligible for next/image optimization */}
                 <img
                   src={ticket.intakeSignature}
-                  alt="Customer signature captured at intake"
+                  alt={t.intakeSignatureAlt}
                   className="max-h-32 w-full rounded-lg border border-slate-200 bg-white object-contain"
                 />
               </div>
@@ -519,66 +523,66 @@ export default async function TicketDetailPage({
           )}
 
           <Card>
-            <CardHeader title="Assignment" />
+            <CardHeader title={t.assignment} />
             <form action={assignTicket} className="flex items-end gap-2 p-5">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div className="flex-1">
                 <Select name="assignedToId" defaultValue={ticket.assignedToId ?? ""}>
-                  <option value="">Unassigned</option>
-                  {technicians.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  <option value="">{t.unassigned}</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>{tech.name}</option>
                   ))}
                 </Select>
               </div>
-              <Button type="submit" variant="secondary">Save</Button>
+              <Button type="submit" variant="secondary">{t.save}</Button>
             </form>
           </Card>
 
           <Card>
-            <CardHeader title="ETA & labor" />
+            <CardHeader title={t.etaLabor} />
             <form action={updateTicketDetails} className="space-y-3 p-5">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div>
-                <Label>Estimated completion</Label>
+                <Label>{t.estimatedCompletion}</Label>
                 <Input name="etaDate" type="date" defaultValue={dateInputValue} />
               </div>
               <div>
-                <Label>Labor cost</Label>
+                <Label>{t.laborCost}</Label>
                 <Input name="laborCost" type="number" step="0.01" min="0" defaultValue={ticket.laborCost} />
               </div>
-              <Button type="submit" variant="secondary" className="w-full">Save</Button>
+              <Button type="submit" variant="secondary" className="w-full">{t.save}</Button>
             </form>
           </Card>
 
           <Card>
-            <CardHeader title="Warranty" />
+            <CardHeader title={t.warranty} />
             <form action={setWarranty} className="space-y-3 p-5">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div>
-                <Label>Warranty period (days)</Label>
+                <Label>{t.warrantyPeriod}</Label>
                 <Input name="warrantyDays" type="number" min="0" step="1"
-                  defaultValue={ticket.warrantyDays ?? ""} placeholder="e.g. 90" />
-                <p className="mt-1 text-xs text-slate-400">Leave empty for no warranty.</p>
+                  defaultValue={ticket.warrantyDays ?? ""} placeholder={t.warrantyDaysPlaceholder} />
+                <p className="mt-1 text-xs text-slate-400">{t.noWarranty}</p>
               </div>
               {warrantyExpiry && (
                 <p className={`rounded-lg px-3 py-2 text-xs font-semibold ${underWarranty ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                  {underWarranty ? "Under warranty until" : "Warranty expired"} {fmtDate(warrantyExpiry)}
+                  {underWarranty ? t.underWarrantyUntil : t.warrantyExpired} {fmtDate(warrantyExpiry)}
                 </p>
               )}
-              <Button type="submit" variant="secondary" className="w-full">Save</Button>
+              <Button type="submit" variant="secondary" className="w-full">{t.save}</Button>
             </form>
           </Card>
 
           <Card>
-            <CardHeader title="Billing" />
+            <CardHeader title={t.billing} />
             <div className="space-y-2 p-5 text-sm">
               {ticket.quoteAmount != null && (
-                <div className="flex justify-between"><span className="text-slate-500">Quote</span><span>{money(ticket.quoteAmount)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">{t.quote}</span><span>{money(ticket.quoteAmount)}</span></div>
               )}
-              <div className="flex justify-between"><span className="text-slate-500">Labor</span><span>{money(ticket.laborCost)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Parts</span><span>{money(partsTotal)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">{t.labor}</span><span>{money(ticket.laborCost)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">{t.parts}</span><span>{money(partsTotal)}</span></div>
               <div className="flex justify-between border-t border-slate-100 pt-2 font-semibold">
-                <span>Running total</span><span>{money(ticket.laborCost + partsTotal)}</span>
+                <span>{t.runningTotal}</span><span>{money(ticket.laborCost + partsTotal)}</span>
               </div>
 
               {ticket.invoice ? (
@@ -586,16 +590,16 @@ export default async function TicketDetailPage({
                   href={`/dashboard/invoices/${ticket.invoice.id}`}
                   className="mt-2 block rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-slate-700"
                 >
-                  View invoice {ticket.invoice.number}
+                  {t.viewInvoiceBtn} {ticket.invoice.number}
                 </Link>
               ) : (
                 <form action={createInvoice} className="mt-2 space-y-2">
                   <input type="hidden" name="ticketId" value={ticket.id} />
                   <div>
-                    <Label>Discount (optional)</Label>
+                    <Label>{t.discountOptional}</Label>
                     <Input name="discount" type="number" step="0.01" min="0" defaultValue="0" />
                   </div>
-                  <Button type="submit" className="w-full">Issue invoice</Button>
+                  <Button type="submit" className="w-full">{t.issueInvoice}</Button>
                 </form>
               )}
             </div>
@@ -603,11 +607,11 @@ export default async function TicketDetailPage({
 
           {ticket.whatsappLogs.length > 0 && (
             <Card>
-              <CardHeader title="WhatsApp" />
+              <CardHeader title={t.whatsappCard} />
               <form action={resendWhatsapp} className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <input type="hidden" name="ticketId" value={ticket.id} />
-                <p className="text-xs text-slate-400">Send current status to customer</p>
-                <Button type="submit" size="sm" variant="secondary">Resend</Button>
+                <p className="text-xs text-slate-400">{t.sendCurrentStatus}</p>
+                <Button type="submit" size="sm" variant="secondary">{t.resend}</Button>
               </form>
               <ul className="divide-y divide-slate-100">
                 {ticket.whatsappLogs.map((w) => (
@@ -622,7 +626,7 @@ export default async function TicketDetailPage({
                               : "bg-rose-100 text-rose-700"
                         }
                       >
-                        {w.status === "SKIPPED" ? "send manually" : w.status.toLowerCase()}
+                        {w.status === "SKIPPED" ? t.sendManually : w.status.toLowerCase()}
                       </Badge>
                       <span className="text-slate-400">{fmtDateTime(w.createdAt)}</span>
                     </div>
@@ -634,8 +638,8 @@ export default async function TicketDetailPage({
           )}
 
           <p className="text-xs text-slate-400">
-            Created {fmtDateTime(ticket.createdAt)} by {ticket.createdBy.name}
-            {ticket.closedAt && <> · Closed {fmtDateTime(ticket.closedAt)}</>}
+            {t.created} {fmtDateTime(ticket.createdAt)} {t.by} {ticket.createdBy.name}
+            {ticket.closedAt && <> · {t.closedAtLabel} {fmtDateTime(ticket.closedAt)}</>}
           </p>
         </div>
       </div>

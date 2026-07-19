@@ -39,8 +39,8 @@ model Customer {
 }
 
 // Status flow:
-// RECEIVED -> DIAGNOSING -> QUOTE_SENT -> QUOTE_APPROVED | QUOTE_REJECTED
-//   -> IN_REPAIR -> READY_FOR_PICKUP -> CLOSED
+// RECEIVED -> DIAGNOSING / EXPEDITE_DIAGNOSIS -> WAITING_FOR_PARTS / TESTING
+//   -> WAITING_FOR_QUOTE_APPROVAL -> READY_FOR_PICKUP -> CLOSED
 model Ticket {
   id           String        @id @default(cuid())
   code         String        @unique // short public tracking code e.g. GPU-4F7K2
@@ -211,11 +211,16 @@ model Expense {
 
 // Status: SENT | FAILED | SKIPPED (skipped = WhatsApp not configured, manual send)
 model Settings {
-  id          String @id @default("global")
-  shopName    String @default("GPU Fix Shop")
-  shopAddress String @default("")
-  shopPhone   String @default("")
-  shopHours   String @default("")
+  id              String @id @default("global")
+  shopName        String @default("GPU Fix Shop")
+  shopAddress     String @default("")
+  shopPhone       String @default("")
+  shopHours       String @default("")
+  whatsappNumber  String @default("")
+  socialFacebook  String @default("")
+  socialYoutube   String @default("")
+  socialTiktok    String @default("")
+  socialDiscord   String @default("")
 }
 
 model WhatsappLog {

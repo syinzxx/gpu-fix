@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     await Promise.all([
       db.ticket.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
       db.ticket.count({ where: { status: "READY_FOR_PICKUP" } }),
-      db.ticket.count({ where: { status: "QUOTE_SENT" } }),
+      db.ticket.count({ where: { status: "WAITING_FOR_QUOTE_APPROVAL" } }),
       db.$queryRaw<{ cnt: bigint }[]>`SELECT COUNT(*) as cnt FROM Part WHERE quantity <= lowStockThreshold`,
       db.ticket.findMany({
         where: { status: { not: "CLOSED" } },
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
       subAlert: true,
     },
     { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?status=READY_FOR_PICKUP" },
-    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=QUOTE_SENT" },
+    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=WAITING_FOR_QUOTE_APPROVAL" },
     {
       label: t.lowStockParts,
       value: lowStockCount,

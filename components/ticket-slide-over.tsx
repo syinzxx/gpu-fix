@@ -142,7 +142,7 @@ export function TicketSlideOver({
               </p>
               <div className="flex flex-col gap-2">
                 {nextStatuses.map((next, i) => {
-                  if (next === "QUOTE_SENT") {
+                  if (next === "WAITING_FOR_QUOTE_APPROVAL") {
                     return (
                       <Link
                         key={next}

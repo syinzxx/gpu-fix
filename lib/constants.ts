@@ -4,10 +4,10 @@ export type Role = (typeof ROLES)[number];
 export const STATUSES = [
   "RECEIVED",
   "DIAGNOSING",
-  "QUOTE_SENT",
-  "QUOTE_APPROVED",
-  "QUOTE_REJECTED",
-  "IN_REPAIR",
+  "EXPEDITE_DIAGNOSIS",
+  "WAITING_FOR_PARTS",
+  "TESTING",
+  "WAITING_FOR_QUOTE_APPROVAL",
   "READY_FOR_PICKUP",
   "CLOSED",
 ] as const;
@@ -16,22 +16,38 @@ export type TicketStatus = (typeof STATUSES)[number];
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   RECEIVED: "Received",
   DIAGNOSING: "Diagnosing",
-  QUOTE_SENT: "Quote Sent",
-  QUOTE_APPROVED: "Quote Approved",
-  QUOTE_REJECTED: "Quote Rejected",
-  IN_REPAIR: "In Repair",
+  EXPEDITE_DIAGNOSIS: "Expedite Diagnosis",
+  WAITING_FOR_PARTS: "Waiting for Parts",
+  TESTING: "Testing",
+  WAITING_FOR_QUOTE_APPROVAL: "Waiting for Quote Approval",
   READY_FOR_PICKUP: "Ready for Pickup",
   CLOSED: "Closed",
 };
 
+// Arabic status labels (lifted from app/track/[code]/page.tsx so other pages can reuse it)
+export const STATUS_LABELS_AR: Record<TicketStatus, string> = {
+  RECEIVED: "مستلم",
+  DIAGNOSING: "قيد التشخيص",
+  EXPEDITE_DIAGNOSIS: "تشخيص سريع",
+  WAITING_FOR_PARTS: "بانتظار القطع",
+  TESTING: "قيد الاختبار",
+  WAITING_FOR_QUOTE_APPROVAL: "بانتظار موافقة العميل",
+  READY_FOR_PICKUP: "جاهز للاستلام",
+  CLOSED: "مغلق",
+};
+
+export function statusLabelsFor(locale: string): Record<TicketStatus, string> {
+  return locale === "ar" ? STATUS_LABELS_AR : STATUS_LABELS;
+}
+
 // Allowed transitions from each status
 export const STATUS_FLOW: Record<TicketStatus, TicketStatus[]> = {
-  RECEIVED: ["DIAGNOSING"],
-  DIAGNOSING: ["QUOTE_SENT", "IN_REPAIR"], // small fixes may skip the quote
-  QUOTE_SENT: ["QUOTE_APPROVED", "QUOTE_REJECTED"],
-  QUOTE_APPROVED: ["IN_REPAIR"],
-  QUOTE_REJECTED: ["READY_FOR_PICKUP", "QUOTE_SENT"], // return device, or re-quote
-  IN_REPAIR: ["READY_FOR_PICKUP", "DIAGNOSING"],
+  RECEIVED: ["DIAGNOSING", "EXPEDITE_DIAGNOSIS"],
+  DIAGNOSING: ["EXPEDITE_DIAGNOSIS", "WAITING_FOR_PARTS", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
+  EXPEDITE_DIAGNOSIS: ["WAITING_FOR_PARTS", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
+  WAITING_FOR_PARTS: ["DIAGNOSING", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
+  TESTING: ["DIAGNOSING", "WAITING_FOR_PARTS", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
+  WAITING_FOR_QUOTE_APPROVAL: ["DIAGNOSING", "READY_FOR_PICKUP"],
   READY_FOR_PICKUP: ["CLOSED"],
   CLOSED: [],
 };
@@ -40,18 +56,19 @@ export const STATUS_FLOW: Record<TicketStatus, TicketStatus[]> = {
 export const ACTIVE_STATUSES: TicketStatus[] = [
   "RECEIVED",
   "DIAGNOSING",
-  "QUOTE_SENT",
-  "QUOTE_APPROVED",
-  "IN_REPAIR",
+  "EXPEDITE_DIAGNOSIS",
+  "WAITING_FOR_PARTS",
+  "TESTING",
+  "WAITING_FOR_QUOTE_APPROVAL",
 ];
 
 export const STATUS_COLORS: Record<TicketStatus, string> = {
   RECEIVED: "bg-slate-100 text-slate-600",
   DIAGNOSING: "bg-sky-100 text-sky-700",
-  QUOTE_SENT: "bg-amber-100 text-amber-700",
-  QUOTE_APPROVED: "bg-teal-100 text-teal-700",
-  QUOTE_REJECTED: "bg-rose-100 text-rose-700",
-  IN_REPAIR: "bg-violet-100 text-violet-700",
+  EXPEDITE_DIAGNOSIS: "bg-orange-100 text-orange-700",
+  WAITING_FOR_PARTS: "bg-indigo-100 text-indigo-700",
+  TESTING: "bg-teal-100 text-teal-700",
+  WAITING_FOR_QUOTE_APPROVAL: "bg-amber-100 text-amber-700",
   READY_FOR_PICKUP: "bg-emerald-500 text-white",
   CLOSED: "bg-slate-100 text-slate-400",
 };
@@ -114,10 +131,10 @@ export function statusMessage(opts: {
   const lines: Record<TicketStatus, string> = {
     RECEIVED: `We received your ${opts.device}. Track it anytime: ${trackUrl}`,
     DIAGNOSING: `Your ${opts.device} is now being diagnosed.`,
-    QUOTE_SENT: `Diagnosis complete. Repair quote: ${opts.quoteAmount ?? "-"}. Reply to approve or check ${trackUrl}`,
-    QUOTE_APPROVED: `Quote approved — your ${opts.device} is queued for repair.`,
-    QUOTE_REJECTED: `Quote declined. Your ${opts.device} will be prepared for return.`,
-    IN_REPAIR: `Good news — your ${opts.device} is now being repaired.${opts.eta ? ` Estimated completion: ${opts.eta}.` : ""}`,
+    EXPEDITE_DIAGNOSIS: `Your ${opts.device} has been prioritised for fast diagnosis.`,
+    WAITING_FOR_PARTS: `Parts have been ordered for your ${opts.device}. We'll update you when they arrive.`,
+    TESTING: `Your ${opts.device} is in final testing.${opts.eta ? ` Expected completion: ${opts.eta}.` : ""}`,
+    WAITING_FOR_QUOTE_APPROVAL: `Diagnosis complete. Repair quote: ${opts.quoteAmount ?? "-"}. Please approve or contact us. Track at ${trackUrl}`,
     READY_FOR_PICKUP: `Your ${opts.device} is ready for pickup! See the summary at ${trackUrl}`,
     CLOSED: `Ticket ${opts.code} is closed. Thank you for choosing ${shop}! We'd love your feedback — rate your repair experience: ${trackUrl}`,
   };
@@ -135,10 +152,10 @@ export function buildStatusLine(opts: {
   const lines: Record<TicketStatus, string> = {
     RECEIVED: `We received your ${device}`,
     DIAGNOSING: `Your ${device} is now being diagnosed`,
-    QUOTE_SENT: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
-    QUOTE_APPROVED: `Quote approved — your ${device} is queued for repair`,
-    QUOTE_REJECTED: `Quote declined. Your ${device} will be prepared for return`,
-    IN_REPAIR: `Your ${device} is now being repaired${eta ? `. ETA: ${eta}` : ""}`,
+    EXPEDITE_DIAGNOSIS: `Your ${device} has been prioritised for fast diagnosis`,
+    WAITING_FOR_PARTS: `Parts ordered for your ${device}`,
+    TESTING: `Your ${device} is in final testing${eta ? `. ETA: ${eta}` : ""}`,
+    WAITING_FOR_QUOTE_APPROVAL: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
     READY_FOR_PICKUP: `Your ${device} is ready for pickup!`,
     CLOSED: `Ticket closed. Thank you for choosing us! We'd love your feedback — please rate your repair experience`,
   };

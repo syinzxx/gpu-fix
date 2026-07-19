@@ -156,15 +156,15 @@ export async function changeStatus(formData: FormData) {
     throw new Error(`Cannot move from ${ticket.status} to ${toStatus}`);
   }
 
-  if (toStatus === "QUOTE_SENT" && (!quoteRaw || isNaN(parseFloat(quoteRaw)))) {
-    throw new Error("A quote amount is required to send a quote");
+  if (toStatus === "WAITING_FOR_QUOTE_APPROVAL" && (!quoteRaw || isNaN(parseFloat(quoteRaw)))) {
+    throw new Error("A quote amount is required");
   }
 
   await db.ticket.update({
     where: { id: ticketId },
     data: {
       status: toStatus,
-      quoteAmount: toStatus === "QUOTE_SENT" ? parseFloat(quoteRaw!) : undefined,
+      quoteAmount: toStatus === "WAITING_FOR_QUOTE_APPROVAL" ? parseFloat(quoteRaw!) : undefined,
       closedAt: toStatus === "CLOSED" ? new Date() : undefined,
       events: {
         create: {
@@ -178,7 +178,7 @@ export async function changeStatus(formData: FormData) {
     },
   });
 
-  const changeStatusQuoteAmount = toStatus === "QUOTE_SENT" ? parseFloat(quoteRaw!) : ticket.quoteAmount;
+  const changeStatusQuoteAmount = toStatus === "WAITING_FOR_QUOTE_APPROVAL" ? parseFloat(quoteRaw!) : ticket.quoteAmount;
   const changeStatusEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
   await sendTicketStatusWhatsapp({
     ticketId,

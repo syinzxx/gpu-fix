@@ -81,8 +81,7 @@ export async function createSupplier(formData: FormData) {
     },
   });
 
-  revalidatePath("/dashboard/suppliers");
-  redirect("/dashboard/suppliers");
+  revalidatePath("/dashboard/inventory");
 }
 
 export async function createPurchaseOrder(formData: FormData) {
@@ -117,8 +116,7 @@ export async function createPurchaseOrder(formData: FormData) {
     },
   });
 
-  revalidatePath("/dashboard/purchase-orders");
-  redirect("/dashboard/purchase-orders");
+  revalidatePath("/dashboard/inventory");
 }
 
 // Receiving a PO restocks every item and updates part cost price
@@ -149,7 +147,6 @@ export async function receivePurchaseOrder(formData: FormData) {
     });
   });
 
-  revalidatePath("/dashboard/purchase-orders");
   revalidatePath("/dashboard/inventory");
 }
 
@@ -161,5 +158,5 @@ export async function cancelPurchaseOrder(formData: FormData) {
   if (po.status !== "PENDING") throw new Error("Only pending orders can be cancelled");
 
   await db.purchaseOrder.update({ where: { id }, data: { status: "CANCELLED" } });
-  revalidatePath("/dashboard/purchase-orders");
+  revalidatePath("/dashboard/inventory");
 }

@@ -15,8 +15,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: "/dashboard", label: t.overview, icon: "◈" },
     { href: "/dashboard/tickets", label: t.tickets, icon: "▤" },
     { href: "/dashboard/inventory", label: t.inventory, icon: "▦" },
-    { href: "/dashboard/purchase-orders", label: t.purchaseOrders, icon: "⬡" },
-    { href: "/dashboard/suppliers", label: t.suppliers, icon: "⬒" },
     { href: "/dashboard/customers", label: t.customers, icon: "◔" },
     { href: "/dashboard/reports", label: t.reports, icon: "◫" },
     { href: "/dashboard/expenses", label: t.expenses, icon: "▧", roles: ["ADMIN", "RECEPTIONIST"] },

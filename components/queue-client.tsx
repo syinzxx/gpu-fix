@@ -65,6 +65,14 @@ export function QueueClient({
                 <tr
                   key={ticket.id}
                   onClick={() => setSelected(ticket)}
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(ticket);
+                    }
+                  }}
                   className={cn(
                     "cursor-pointer border-l-2 hover:bg-slate-50",
                     urgency === "overdue" && "border-l-red-400 bg-red-50/40 hover:bg-red-50/60",
@@ -122,7 +130,7 @@ function EtaCell({ date }: { date: Date | null }) {
   const label =
     urgency === "overdue" ? "Overdue" :
     urgency === "today" ? "Due today" :
-    fmtDate(date);
+    fmtDate(date!);
   const color =
     urgency === "overdue" ? "text-red-600 font-semibold" :
     urgency === "today" ? "text-amber-600 font-semibold" :

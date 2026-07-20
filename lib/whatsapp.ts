@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
-import { statusMessage, buildStatusLine, type TicketStatus } from "@/lib/constants";
+import {
+  customerStatusMessage,
+  buildCustomerStatusLine,
+  type CustomerStatus,
+} from "@/lib/constants";
 
 /**
  * Optional structured params for the ticket_update template.
@@ -27,7 +31,7 @@ export interface WhatsappTemplateParams {
  * function sends `body` as a free-form text message, which is only delivered
  * if the customer initiated a conversation in the last 24 hours.
  *
- * NOTE: all three ticket actions (createTicket, changeStatus, resendWhatsapp)
+ * NOTE: all three ticket actions (createTicket, setCustomerStatus, resendWhatsapp)
  * always pass `templateParams`, so they take the template path. The free-text
  * branch is NOT dead code — it exists for ad-hoc/manual callers that pass only
  * `body` (deliverable only inside an open 24h service window).
@@ -110,7 +114,7 @@ export async function sendWhatsapp(opts: {
  * Sends the standard per-status-change WhatsApp message for a ticket.
  * This is the single place that assembles the free-text body (statusMessage)
  * and the ticket_update template line (buildStatusLine) so every caller —
- * createTicket, changeStatus, resendWhatsapp, and the public quote-approval
+ * createTicket, setCustomerStatus, resendWhatsapp, and the public quote-approval
  * actions — sends an identical message for a given status. Do not
  * reimplement this assembly elsewhere; call this instead.
  */
@@ -119,7 +123,7 @@ export async function sendTicketStatusWhatsapp(opts: {
   to: string | null | undefined;
   customerName: string;
   code: string;
-  status: TicketStatus;
+  status: CustomerStatus;
   device: string;
   quoteAmount?: number | null;
   eta?: string | null;
@@ -128,7 +132,7 @@ export async function sendTicketStatusWhatsapp(opts: {
   await sendWhatsapp({
     ticketId: opts.ticketId,
     to: opts.to,
-    body: statusMessage({
+    body: customerStatusMessage({
       customerName: opts.customerName,
       code: opts.code,
       status: opts.status,
@@ -139,7 +143,7 @@ export async function sendTicketStatusWhatsapp(opts: {
     templateParams: {
       customerName: opts.customerName,
       code: opts.code,
-      statusLine: buildStatusLine({
+      statusLine: buildCustomerStatusLine({
         status: opts.status,
         device: opts.device,
         quoteAmount: opts.quoteAmount,

@@ -6,7 +6,13 @@ import { db } from "@/lib/db";
 import { requireUser, requireRole } from "@/lib/auth";
 import { generateTicketCode, money } from "@/lib/utils";
 import { fmtDate } from "@/lib/utils";
-import { STATUS_FLOW, type TicketStatus } from "@/lib/constants";
+import {
+  CUSTOMER_STATUSES,
+  STAFF_STATUSES,
+  CUSTOMER_TO_STAFF_STATUS,
+  type CustomerStatus,
+  type StaffStatus,
+} from "@/lib/constants";
 import { sendTicketStatusWhatsapp } from "@/lib/whatsapp";
 
 async function uniqueTicketCode(): Promise<string> {
@@ -75,6 +81,8 @@ export async function createTicket(formData: FormData) {
       serialNumber: (formData.get("serialNumber") as string)?.trim() || null,
       accessories: (formData.get("accessories") as string)?.trim() || null,
       issue,
+      staffStatus: "OPEN",
+      customerStatus: "RECEIVED",
       priority: (formData.get("priority") as string) || "NORMAL",
       etaDate: etaRaw ? new Date(etaRaw) : null,
       assignedToId: (formData.get("assignedToId") as string) || null,
@@ -114,7 +122,7 @@ export async function createTicket(formData: FormData) {
     to: customer.whatsapp,
     customerName: customer.name,
     code: ticket.code,
-    status: "RECEIVED",
+    status: "RECEIVED" as CustomerStatus,
     device: `${brand} ${model}`,
   });
 
@@ -122,37 +130,40 @@ export async function createTicket(formData: FormData) {
   redirect(`/dashboard/tickets/${ticket.id}`);
 }
 
-export async function changeStatus(formData: FormData) {
+export async function setCustomerStatus(formData: FormData) {
   const user = await requireUser();
   const ticketId = formData.get("ticketId") as string;
-  const toStatus = formData.get("toStatus") as TicketStatus;
+  const customerStatus = formData.get("customerStatus") as CustomerStatus;
   const quoteRaw = formData.get("quoteAmount") as string | null;
+
+  if (!CUSTOMER_STATUSES.includes(customerStatus)) {
+    throw new Error(`Invalid customer status: ${customerStatus}`);
+  }
 
   const ticket = await db.ticket.findUniqueOrThrow({
     where: { id: ticketId },
     include: { customer: true },
   });
 
-  const allowed = STATUS_FLOW[ticket.status as TicketStatus] ?? [];
-  if (!allowed.includes(toStatus)) {
-    throw new Error(`Cannot move from ${ticket.status} to ${toStatus}`);
-  }
-
-  if (toStatus === "WAITING_FOR_QUOTE_APPROVAL" && (!quoteRaw || isNaN(parseFloat(quoteRaw)))) {
+  if (customerStatus === "WAITING_FOR_APPROVAL" && (!quoteRaw || isNaN(parseFloat(quoteRaw)))) {
     throw new Error("A quote amount is required");
   }
+
+  const newStaffStatus = CUSTOMER_TO_STAFF_STATUS[customerStatus];
+  const isTerminal = customerStatus === "CLOSED" || customerStatus === "CANCELLED";
 
   await db.ticket.update({
     where: { id: ticketId },
     data: {
-      status: toStatus,
-      quoteAmount: toStatus === "WAITING_FOR_QUOTE_APPROVAL" ? parseFloat(quoteRaw!) : undefined,
-      closedAt: toStatus === "CLOSED" ? new Date() : undefined,
+      customerStatus,
+      staffStatus: newStaffStatus,
+      quoteAmount: customerStatus === "WAITING_FOR_APPROVAL" ? parseFloat(quoteRaw!) : undefined,
+      closedAt: isTerminal ? new Date() : undefined,
       events: {
         create: {
           type: "STATUS_CHANGE",
-          fromStatus: ticket.status,
-          toStatus,
+          fromStatus: ticket.customerStatus,
+          toStatus: customerStatus,
           isPublic: true,
           createdById: user.id,
         },
@@ -160,17 +171,37 @@ export async function changeStatus(formData: FormData) {
     },
   });
 
-  const changeStatusQuoteAmount = toStatus === "WAITING_FOR_QUOTE_APPROVAL" ? parseFloat(quoteRaw!) : ticket.quoteAmount;
-  const changeStatusEta = ticket.etaDate ? fmtDate(ticket.etaDate) : null;
   await sendTicketStatusWhatsapp({
     ticketId,
     to: ticket.customer.whatsapp,
     customerName: ticket.customer.name,
     code: ticket.code,
-    status: toStatus,
+    status: customerStatus,
     device: `${ticket.brand} ${ticket.model}`,
-    quoteAmount: changeStatusQuoteAmount,
-    eta: changeStatusEta,
+    quoteAmount: customerStatus === "WAITING_FOR_APPROVAL" ? parseFloat(quoteRaw!) : ticket.quoteAmount,
+    eta: ticket.etaDate ? fmtDate(ticket.etaDate) : null,
+  });
+
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+  revalidatePath("/dashboard/tickets");
+  revalidatePath("/dashboard");
+}
+
+export async function setStaffStatus(formData: FormData) {
+  await requireUser();
+  const ticketId = formData.get("ticketId") as string;
+  const staffStatus = formData.get("staffStatus") as StaffStatus;
+
+  if (!STAFF_STATUSES.includes(staffStatus)) {
+    throw new Error(`Invalid staff status: ${staffStatus}`);
+  }
+
+  await db.ticket.update({
+    where: { id: ticketId },
+    data: {
+      staffStatus,
+      closedAt: staffStatus === "CLOSED" ? new Date() : undefined,
+    },
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -317,7 +348,7 @@ export async function resendWhatsapp(formData: FormData) {
     to: ticket.customer.whatsapp,
     customerName: ticket.customer.name,
     code: ticket.code,
-    status: ticket.status as TicketStatus,
+    status: ticket.customerStatus as CustomerStatus,
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
     eta: resendEta,

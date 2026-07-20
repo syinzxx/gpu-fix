@@ -251,29 +251,33 @@ export function NewTicketForm({
                 <div className="space-y-3 rounded-xl border border-slate-200 p-4">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <Label>Name</Label>
+                      <Label htmlFor="editName">Name</Label>
                       <Input
+                        id="editName"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label>Phone</Label>
+                      <Label htmlFor="editPhone">Phone</Label>
                       <Input
+                        id="editPhone"
                         value={editPhone}
                         onChange={(e) => setEditPhone(e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label>WhatsApp</Label>
+                      <Label htmlFor="editWhatsapp">WhatsApp</Label>
                       <Input
+                        id="editWhatsapp"
                         value={editWhatsapp}
                         onChange={(e) => setEditWhatsapp(e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label>Email</Label>
+                      <Label htmlFor="editEmail">Email</Label>
                       <Input
+                        id="editEmail"
                         type="email"
                         value={editEmail}
                         onChange={(e) => setEditEmail(e.target.value)}

@@ -38,9 +38,6 @@ model Customer {
   tickets   Ticket[]
 }
 
-// Status flow:
-// RECEIVED -> DIAGNOSING / EXPEDITE_DIAGNOSIS -> WAITING_FOR_PARTS / TESTING
-//   -> WAITING_FOR_QUOTE_APPROVAL -> READY_FOR_PICKUP -> CLOSED
 model Ticket {
   id           String        @id @default(cuid())
   code         String        @unique // short public tracking code e.g. GPU-4F7K2
@@ -52,7 +49,6 @@ model Ticket {
   serialNumber String?
   accessories  String?
   issue        String
-  status       String        @default("RECEIVED")
   staffStatus    String        @default("OPEN")      // OPEN | PENDING | CLOSED
   customerStatus String        @default("RECEIVED")  // RECEIVED | DIAGNOSING | WAITING_FOR_PARTS | IN_REPAIR | TESTING | WAITING_FOR_APPROVAL | READY_FOR_PICKUP | CLOSED | CANCELLED
   priority     String        @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
@@ -82,7 +78,6 @@ model Ticket {
   attachments      Attachment[]
   checklistItems   TicketChecklistItem[]
 
-  @@index([status])
   @@index([staffStatus])
   @@index([customerId])
 }

@@ -20,10 +20,10 @@ export async function GET(_request: NextRequest): Promise<Response> {
 
   const [open, ready, latestTicket] = await Promise.all([
     db.ticket.count({
-      where: { status: { not: "CLOSED" } },
+      where: { staffStatus: { not: "CLOSED" } },
     }),
     db.ticket.count({
-      where: { status: "READY_FOR_PICKUP" },
+      where: { customerStatus: "READY_FOR_PICKUP" },
     }),
     db.ticket.findFirst({
       orderBy: { createdAt: "desc" },

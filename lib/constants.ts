@@ -1,78 +1,6 @@
 export const ROLES = ["ADMIN", "RECEPTIONIST", "TECHNICIAN"] as const;
 export type Role = (typeof ROLES)[number];
 
-export const STATUSES = [
-  "RECEIVED",
-  "DIAGNOSING",
-  "EXPEDITE_DIAGNOSIS",
-  "WAITING_FOR_PARTS",
-  "TESTING",
-  "WAITING_FOR_QUOTE_APPROVAL",
-  "READY_FOR_PICKUP",
-  "CLOSED",
-] as const;
-export type TicketStatus = (typeof STATUSES)[number];
-
-export const STATUS_LABELS: Record<TicketStatus, string> = {
-  RECEIVED: "Received",
-  DIAGNOSING: "Diagnosing",
-  EXPEDITE_DIAGNOSIS: "Expedite Diagnosis",
-  WAITING_FOR_PARTS: "Waiting for Parts",
-  TESTING: "Testing",
-  WAITING_FOR_QUOTE_APPROVAL: "Waiting for Quote Approval",
-  READY_FOR_PICKUP: "Ready for Pickup",
-  CLOSED: "Closed",
-};
-
-// Arabic status labels (lifted from app/track/[code]/page.tsx so other pages can reuse it)
-export const STATUS_LABELS_AR: Record<TicketStatus, string> = {
-  RECEIVED: "مستلم",
-  DIAGNOSING: "قيد التشخيص",
-  EXPEDITE_DIAGNOSIS: "تشخيص سريع",
-  WAITING_FOR_PARTS: "بانتظار القطع",
-  TESTING: "قيد الاختبار",
-  WAITING_FOR_QUOTE_APPROVAL: "بانتظار موافقة العميل",
-  READY_FOR_PICKUP: "جاهز للاستلام",
-  CLOSED: "مغلق",
-};
-
-export function statusLabelsFor(locale: string): Record<TicketStatus, string> {
-  return locale === "ar" ? STATUS_LABELS_AR : STATUS_LABELS;
-}
-
-// Allowed transitions from each status
-export const STATUS_FLOW: Record<TicketStatus, TicketStatus[]> = {
-  RECEIVED: ["DIAGNOSING", "EXPEDITE_DIAGNOSIS"],
-  DIAGNOSING: ["EXPEDITE_DIAGNOSIS", "WAITING_FOR_PARTS", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
-  EXPEDITE_DIAGNOSIS: ["WAITING_FOR_PARTS", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
-  WAITING_FOR_PARTS: ["DIAGNOSING", "TESTING", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
-  TESTING: ["DIAGNOSING", "WAITING_FOR_PARTS", "WAITING_FOR_QUOTE_APPROVAL", "READY_FOR_PICKUP"],
-  WAITING_FOR_QUOTE_APPROVAL: ["DIAGNOSING", "READY_FOR_PICKUP"],
-  READY_FOR_PICKUP: ["CLOSED"],
-  CLOSED: [],
-};
-
-// Statuses that count as "in the queue" (device still being worked on)
-export const ACTIVE_STATUSES: TicketStatus[] = [
-  "RECEIVED",
-  "DIAGNOSING",
-  "EXPEDITE_DIAGNOSIS",
-  "WAITING_FOR_PARTS",
-  "TESTING",
-  "WAITING_FOR_QUOTE_APPROVAL",
-];
-
-export const STATUS_COLORS: Record<TicketStatus, string> = {
-  RECEIVED: "bg-slate-100 text-slate-600",
-  DIAGNOSING: "bg-sky-100 text-sky-700",
-  EXPEDITE_DIAGNOSIS: "bg-orange-100 text-orange-700",
-  WAITING_FOR_PARTS: "bg-indigo-100 text-indigo-700",
-  TESTING: "bg-teal-100 text-teal-700",
-  WAITING_FOR_QUOTE_APPROVAL: "bg-amber-100 text-amber-700",
-  READY_FOR_PICKUP: "bg-emerald-500 text-white",
-  CLOSED: "bg-slate-100 text-slate-400",
-};
-
 export const PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
 
 export const PRIORITY_COLORS: Record<string, string> = {
@@ -116,51 +44,6 @@ export const EXPENSE_CATEGORIES = [
   "OTHER",
 ] as const;
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
-
-// Message sent to the customer on each status change
-export function statusMessage(opts: {
-  customerName: string;
-  code: string;
-  status: TicketStatus;
-  device: string;
-  quoteAmount?: number | null;
-  eta?: string | null;
-}): string {
-  const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${opts.code}`;
-  const shop = process.env.SHOP_NAME ?? "our shop";
-  const lines: Record<TicketStatus, string> = {
-    RECEIVED: `We received your ${opts.device}. Track it anytime: ${trackUrl}`,
-    DIAGNOSING: `Your ${opts.device} is now being diagnosed.`,
-    EXPEDITE_DIAGNOSIS: `Your ${opts.device} has been prioritised for fast diagnosis.`,
-    WAITING_FOR_PARTS: `Parts have been ordered for your ${opts.device}. We'll update you when they arrive.`,
-    TESTING: `Your ${opts.device} is in final testing.${opts.eta ? ` Expected completion: ${opts.eta}.` : ""}`,
-    WAITING_FOR_QUOTE_APPROVAL: `Diagnosis complete. Repair quote: ${opts.quoteAmount ?? "-"}. Please approve or contact us. Track at ${trackUrl}`,
-    READY_FOR_PICKUP: `Your ${opts.device} is ready for pickup! See the summary at ${trackUrl}`,
-    CLOSED: `Ticket ${opts.code} is closed. Thank you for choosing ${shop}! We'd love your feedback — rate your repair experience: ${trackUrl}`,
-  };
-  return `Hi ${opts.customerName}, ticket ${opts.code}: ${lines[opts.status]}`;
-}
-
-/** Builds the per-status single-sentence line used in the ticket_update WhatsApp template. */
-export function buildStatusLine(opts: {
-  status: TicketStatus;
-  device: string;
-  quoteAmount?: number | null;
-  eta?: string | null;
-}): string {
-  const { status, device, quoteAmount, eta } = opts;
-  const lines: Record<TicketStatus, string> = {
-    RECEIVED: `We received your ${device}`,
-    DIAGNOSING: `Your ${device} is now being diagnosed`,
-    EXPEDITE_DIAGNOSIS: `Your ${device} has been prioritised for fast diagnosis`,
-    WAITING_FOR_PARTS: `Parts ordered for your ${device}`,
-    TESTING: `Your ${device} is in final testing${eta ? `. ETA: ${eta}` : ""}`,
-    WAITING_FOR_QUOTE_APPROVAL: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
-    READY_FOR_PICKUP: `Your ${device} is ready for pickup!`,
-    CLOSED: `Ticket closed. Thank you for choosing us! We'd love your feedback — please rate your repair experience`,
-  };
-  return lines[status];
-}
 
 export const WORK_TYPES = [
   "NO_POWER",

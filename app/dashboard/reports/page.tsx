@@ -22,8 +22,8 @@ export default async function ReportsPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    db.ticket.count({ where: { status: { not: "CLOSED" } } }),
-    db.ticket.count({ where: { status: "CLOSED" } }),
+    db.ticket.count({ where: { staffStatus: { not: "CLOSED" } } }),
+    db.ticket.count({ where: { staffStatus: "CLOSED" } }),
     db.payment.findMany({
       where: { createdAt: { gte: startOfMonth } },
       select: { amount: true, kind: true },
@@ -48,17 +48,17 @@ export default async function ReportsPage() {
     technicians.map(async (tech) => {
       const [open, closedThisMonth, closedAll] = await Promise.all([
         db.ticket.count({
-          where: { assignedToId: tech.id, status: { not: "CLOSED" } },
+          where: { assignedToId: tech.id, staffStatus: { not: "CLOSED" } },
         }),
         db.ticket.count({
           where: {
             assignedToId: tech.id,
-            status: "CLOSED",
+            staffStatus: "CLOSED",
             closedAt: { gte: startOfMonth },
           },
         }),
         db.ticket.findMany({
-          where: { assignedToId: tech.id, status: "CLOSED", closedAt: { not: null } },
+          where: { assignedToId: tech.id, staffStatus: "CLOSED", closedAt: { not: null } },
           select: { createdAt: true, closedAt: true, rating: true },
         }),
       ]);

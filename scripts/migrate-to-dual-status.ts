@@ -14,10 +14,12 @@ const STATUS_MAP: Record<string, { staffStatus: string; customerStatus: string }
 };
 
 async function main() {
-  const tickets = await db.ticket.findMany({ select: { id: true, status: true } });
-  console.log(`Migrating ${tickets.length} tickets...`);
+  // Migration already applied — status column has been removed.
+  // This script is kept for historical reference only.
+  const tickets = await db.ticket.findMany({ select: { id: true, staffStatus: true, customerStatus: true } });
+  console.log(`Found ${tickets.length} tickets (already migrated).`);
   for (const t of tickets) {
-    const mapped = STATUS_MAP[t.status] ?? { staffStatus: "OPEN", customerStatus: "RECEIVED" };
+    const mapped = STATUS_MAP[t.staffStatus] ?? { staffStatus: "OPEN", customerStatus: "RECEIVED" };
     await db.ticket.update({
       where: { id: t.id },
       data: { staffStatus: mapped.staffStatus, customerStatus: mapped.customerStatus },

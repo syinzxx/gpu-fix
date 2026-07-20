@@ -61,8 +61,8 @@ export default async function DashboardPage() {
       sub: overdueCount > 0 ? `${overdueCount} overdue` : null,
       subAlert: true,
     },
-    { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?status=READY_FOR_PICKUP" },
-    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=WAITING_FOR_QUOTE_APPROVAL" },
+    { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?status=PENDING" },
+    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=PENDING" },
     {
       label: t.lowStockParts,
       value: lowStockCount,

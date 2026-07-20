@@ -53,6 +53,8 @@ model Ticket {
   accessories  String?
   issue        String
   status       String        @default("RECEIVED")
+  staffStatus    String        @default("OPEN")      // OPEN | PENDING | CLOSED
+  customerStatus String        @default("RECEIVED")  // RECEIVED | DIAGNOSING | WAITING_FOR_PARTS | IN_REPAIR | TESTING | WAITING_FOR_APPROVAL | READY_FOR_PICKUP | CLOSED | CANCELLED
   priority     String        @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
   etaDate      DateTime?
   quoteAmount  Float?
@@ -81,6 +83,7 @@ model Ticket {
   checklistItems   TicketChecklistItem[]
 
   @@index([status])
+  @@index([staffStatus])
   @@index([customerId])
 }
 

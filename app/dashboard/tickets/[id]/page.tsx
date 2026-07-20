@@ -9,7 +9,9 @@ import {
   PAYMENT_METHODS,
   PAYMENT_KINDS,
   PAYMENT_KIND_COLORS,
+  WORK_TYPE_LABELS,
   type TicketStatus,
+  type WorkType,
 } from "@/lib/constants";
 import {
   changeStatus,
@@ -59,6 +61,14 @@ export default async function TicketDetailPage({
   ]);
   if (!ticket) notFound();
 
+  const originalTicket =
+    ticket.isWarrantyReturn && ticket.warrantyTicketId
+      ? await db.ticket.findUnique({
+          where: { code: ticket.warrantyTicketId },
+          select: { id: true },
+        })
+      : null;
+
   const statusLabels = statusLabelsFor(locale);
   const isAdmin = session?.user?.role === "ADMIN";
   const totalPaid = paymentsTotal(ticket.payments);
@@ -104,7 +114,21 @@ export default async function TicketDetailPage({
             {ticket.serialNumber && ` · SN ${ticket.serialNumber}`}
             {isActive && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} {t.queueIn}</span></>}
             {ticket.isWarrantyReturn && ticket.warrantyTicketId && (
-              <> · <span className="text-amber-600">{t.ref} {ticket.warrantyTicketId}</span></>
+              <>
+                {" · "}
+                {originalTicket ? (
+                  <Link
+                    href={`/dashboard/tickets/${originalTicket.id}`}
+                    className="font-medium text-amber-600 hover:underline"
+                  >
+                    {t.ref} {ticket.warrantyTicketId}
+                  </Link>
+                ) : (
+                  <span className="text-amber-600">
+                    {t.ref} {ticket.warrantyTicketId}
+                  </span>
+                )}
+              </>
             )}
           </p>
           {ticket.rating != null && (
@@ -177,6 +201,14 @@ export default async function TicketDetailPage({
             <CardHeader title={t.issue} />
             <div className="p-5 text-sm text-slate-900">
               <p className="whitespace-pre-wrap">{ticket.issue}</p>
+              {ticket.workType && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Work type:{" "}
+                  <span className="font-medium">
+                    {WORK_TYPE_LABELS[ticket.workType as WorkType] ?? ticket.workType}
+                  </span>
+                </p>
+              )}
               {ticket.accessories && (
                 <p className="mt-3 text-xs text-slate-400">{t.accessories} {ticket.accessories}</p>
               )}

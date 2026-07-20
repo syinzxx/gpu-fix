@@ -3,18 +3,19 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import {
-  STATUS_FLOW,
-  statusLabelsFor,
-  ACTIVE_STATUSES,
+  CUSTOMER_STATUSES,
+  CUSTOMER_STATUS_LABELS,
+  CUSTOMER_STATUS_COLORS,
+  customerStatusLabelsFor,
   PAYMENT_METHODS,
   PAYMENT_KINDS,
   PAYMENT_KIND_COLORS,
   WORK_TYPE_LABELS,
-  type TicketStatus,
+  type CustomerStatus,
   type WorkType,
 } from "@/lib/constants";
 import {
-  changeStatus,
+  setCustomerStatus,
   addNote,
   assignTicket,
   updateTicketDetails,
@@ -28,7 +29,7 @@ import { recordPayment, deleteVoidPayment } from "@/app/actions/payments";
 import { uploadAttachment, deleteAttachment } from "@/app/actions/attachments";
 import { toggleChecklistItem, loadChecklist } from "@/app/actions/checklists";
 import { Button, Input, Label, Select, Textarea, Card, CardHeader, Table, Th, Td, Badge, EmptyState } from "@/components/ui";
-import { StatusBadge, PriorityBadge } from "@/components/status-badge";
+import { StaffStatusBadge, CustomerStatusBadge, PriorityBadge } from "@/components/status-badge";
 import { fmtDate, fmtDateTime, money, paymentsTotal, cn } from "@/lib/utils";
 import { getLocale, getT } from "@/lib/locale";
 
@@ -69,7 +70,6 @@ export default async function TicketDetailPage({
         })
       : null;
 
-  const statusLabels = statusLabelsFor(locale);
   const isAdmin = session?.user?.role === "ADMIN";
   const totalPaid = paymentsTotal(ticket.payments);
   const preChecks = ticket.checklistItems.filter((c) => c.phase === "PRE");
@@ -78,17 +78,16 @@ export default async function TicketDetailPage({
   const [technicians, parts, queueAhead] = await Promise.all([
     db.user.findMany({ where: { active: true, role: { in: ["TECHNICIAN", "ADMIN"] } }, orderBy: { name: "asc" } }),
     db.part.findMany({ where: { quantity: { gt: 0 } }, orderBy: { name: "asc" } }),
-    ACTIVE_STATUSES.includes(ticket.status as TicketStatus)
+    ticket.staffStatus !== "CLOSED"
       ? db.ticket.count({
-          where: { status: { in: [...ACTIVE_STATUSES] }, createdAt: { lt: ticket.createdAt } },
+          where: { staffStatus: { not: "CLOSED" }, createdAt: { lt: ticket.createdAt } },
         })
       : Promise.resolve(0),
   ]);
 
-  const nextStatuses = STATUS_FLOW[ticket.status as TicketStatus] ?? [];
+  const customerStatusLabels = customerStatusLabelsFor(locale);
   const partsTotal = ticket.partsUsed.reduce((s, p) => s + p.unitPrice * p.quantity, 0);
   const dateInputValue = ticket.etaDate ? new Date(ticket.etaDate).toISOString().slice(0, 10) : "";
-  const isActive = ACTIVE_STATUSES.includes(ticket.status as TicketStatus);
 
   const warrantyExpiry =
     ticket.warrantyDays && ticket.closedAt
@@ -103,7 +102,7 @@ export default async function TicketDetailPage({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="font-mono text-3xl font-semibold tracking-[0.12em] text-slate-900">{ticket.code}</h1>
-            <StatusBadge status={ticket.status} />
+            <StaffStatusBadge status={ticket.staffStatus} />
             <PriorityBadge priority={ticket.priority} />
             {ticket.isWarrantyReturn && (
               <Badge className="bg-amber-100 text-amber-700">{t.warrantyReturn}</Badge>
@@ -112,7 +111,7 @@ export default async function TicketDetailPage({
           <p className="mt-1 text-sm text-slate-500">
             {ticket.deviceType} · {ticket.brand} {ticket.model}
             {ticket.serialNumber && ` · SN ${ticket.serialNumber}`}
-            {isActive && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} {t.queueIn}</span></>}
+            {ticket.staffStatus !== "CLOSED" && <> · <span className="font-medium text-violet-700">#{queueAhead + 1} {t.queueIn}</span></>}
             {ticket.isWarrantyReturn && ticket.warrantyTicketId && (
               <>
                 {" · "}
@@ -168,31 +167,59 @@ export default async function TicketDetailPage({
         </div>
       </div>
 
-      {/* Status actions */}
-      {nextStatuses.length > 0 && (
-        <Card className="p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{t.moveForward}</p>
-          <div className="flex flex-wrap items-end gap-3">
-            {nextStatuses.map((next) => (
-              <form key={next} action={changeStatus} className="flex items-end gap-2">
-                <input type="hidden" name="ticketId" value={ticket.id} />
-                <input type="hidden" name="toStatus" value={next} />
-                {next === "WAITING_FOR_QUOTE_APPROVAL" && (
-                  <div>
-                    <Label>{t.quoteAmountLabel}</Label>
-                    <Input name="quoteAmount" type="number" step="0.01" min="0" required
-                      defaultValue={ticket.quoteAmount ?? ""} className="w-32" />
-                  </div>
+      {/* Customer status */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Customer status</p>
+          <CustomerStatusBadge status={ticket.customerStatus} />
+        </div>
+        <form action={setCustomerStatus} className="space-y-3">
+          <input type="hidden" name="ticketId" value={ticket.id} />
+          <div className="flex flex-wrap gap-2">
+            {CUSTOMER_STATUSES.map((s) => (
+              <button
+                key={s}
+                type="submit"
+                name="customerStatus"
+                value={s}
+                disabled={ticket.customerStatus === s}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 transition-all",
+                  ticket.customerStatus === s
+                    ? CUSTOMER_STATUS_COLORS[s as CustomerStatus]
+                    : "bg-white text-slate-500 ring-slate-200 hover:ring-slate-300 disabled:opacity-50"
                 )}
-                <Button type="submit" variant="primary">
-                  → {statusLabels[next]}
-                </Button>
-              </form>
+              >
+                {CUSTOMER_STATUS_LABELS[s as CustomerStatus]}
+              </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-400">{t.statusLoggedWhatsapp}</p>
-        </Card>
-      )}
+          {ticket.customerStatus !== "WAITING_FOR_APPROVAL" && (
+            <div className="flex items-end gap-2">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Set to &ldquo;Awaiting Approval&rdquo; with quote:
+                </label>
+                <input
+                  type="number"
+                  name="quoteAmount"
+                  step="0.01"
+                  min="0"
+                  defaultValue={ticket.quoteAmount ?? ""}
+                  placeholder="Quote amount"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm w-36 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                />
+              </div>
+            </div>
+          )}
+          {ticket.customerStatus === "WAITING_FOR_APPROVAL" && ticket.quoteAmount != null && (
+            <p className="text-xs text-amber-700">
+              Current quote: <strong>{ticket.quoteAmount}</strong> — customer has been notified.
+            </p>
+          )}
+        </form>
+        <p className="mt-2 text-xs text-slate-400">{t.statusLoggedWhatsapp ?? "Status change logged and customer notified via WhatsApp."}</p>
+      </Card>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Left column */}
@@ -505,8 +532,8 @@ export default async function TicketDetailPage({
                     <p className="text-sm text-slate-900">
                       {e.type === "STATUS_CHANGE" || e.type === "CREATED" ? (
                         <>
-                          {e.fromStatus ? `${statusLabels[e.fromStatus as TicketStatus]} → ` : `${t.ticketCreated} — `}
-                          <span className="font-medium">{statusLabels[e.toStatus as TicketStatus]}</span>
+                          {e.fromStatus ? `${customerStatusLabels[e.fromStatus as CustomerStatus] ?? e.fromStatus} → ` : `${t.ticketCreated} — `}
+                          <span className="font-medium">{customerStatusLabels[e.toStatus as CustomerStatus] ?? e.toStatus}</span>
                         </>
                       ) : (
                         <span className="whitespace-pre-wrap">{e.note}</span>

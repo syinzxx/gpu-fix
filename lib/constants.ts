@@ -161,3 +161,26 @@ export function buildStatusLine(opts: {
   };
   return lines[status];
 }
+
+export const WORK_TYPES = [
+  "NO_POWER",
+  "THERMAL_PASTE",
+  "THERMAL_PADS",
+  "MEMORY",
+  "FAN",
+  "EIGHT_PIN",
+  "BIOS",
+  "OTHER",
+] as const;
+export type WorkType = (typeof WORK_TYPES)[number];
+
+export const WORK_TYPE_LABELS: Record<WorkType, string> = {
+  NO_POWER:      "No Power",
+  THERMAL_PASTE: "Thermal Paste",
+  THERMAL_PADS:  "Thermal Pads",
+  MEMORY:        "Memory",
+  FAN:           "Fan",
+  EIGHT_PIN:     "8-pin Replacement",
+  BIOS:          "BIOS / Firmware",
+  OTHER:         "Other",
+};

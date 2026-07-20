@@ -72,6 +72,7 @@ model Ticket {
   warrantyDays     Int?
   isWarrantyReturn Boolean      @default(false)
   warrantyTicketId String?
+  workType         String?  // NO_POWER | THERMAL_PASTE | THERMAL_PADS | MEMORY | FAN | EIGHT_PIN | BIOS | OTHER
   intakeSignature  String? // PNG data URL captured at intake, shown only to staff
   rating           Int? // 1-5, customer feedback submitted from the tracking page
   ratingComment    String?

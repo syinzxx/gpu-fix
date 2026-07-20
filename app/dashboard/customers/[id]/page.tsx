@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { updateCustomer } from "@/app/actions/admin";
 import { getT } from "@/lib/locale";
 import { Button, Input, Label, Textarea, Card, CardHeader, Table, Th, Td, EmptyState } from "@/components/ui";
-import { StatusBadge } from "@/components/status-badge";
+import { StaffStatusBadge } from "@/components/status-badge";
 import { fmtDate } from "@/lib/utils";
 
 export default async function CustomerDetailPage({
@@ -64,11 +64,11 @@ export default async function CustomerDetailPage({
                 <Input id="whatsapp" name="whatsapp" defaultValue={customer.whatsapp ?? ""} />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t.email}</Label>
                 <Input id="email" name="email" type="email" defaultValue={customer.email ?? ""} />
               </div>
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t.notes}</Label>
                 <Textarea id="notes" name="notes" rows={3} defaultValue={customer.notes ?? ""} />
               </div>
               <Button type="submit" variant="secondary" className="w-full">{t.saveChanges}</Button>
@@ -105,7 +105,7 @@ export default async function CustomerDetailPage({
                         <span className="font-medium text-slate-900">{ticket.brand} {ticket.model}</span>
                         <span className="block text-xs text-slate-400">{ticket.deviceType}</span>
                       </Td>
-                      <Td><StatusBadge status={ticket.status} /></Td>
+                      <Td><StaffStatusBadge status={ticket.staffStatus} /></Td>
                       <Td>{ticket.assignedTo?.name ?? <span className="text-slate-400 text-xs">{t.unassigned}</span>}</Td>
                       <Td>{fmtDate(ticket.createdAt)}</Td>
                     </tr>

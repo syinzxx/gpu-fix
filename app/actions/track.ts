@@ -32,17 +32,17 @@ export async function approveQuote(formData: FormData) {
     where: { code },
     include: { customer: { select: { name: true, whatsapp: true } } },
   });
-  // Only act from WAITING_FOR_QUOTE_APPROVAL — wrong state (or unknown code) is a silent no-op.
-  if (!ticket || ticket.status !== "WAITING_FOR_QUOTE_APPROVAL") return;
+  if (!ticket || ticket.customerStatus !== "WAITING_FOR_APPROVAL") return;
 
   await db.ticket.update({
     where: { id: ticket.id },
     data: {
-      status: "WAITING_FOR_PARTS",
+      customerStatus: "WAITING_FOR_PARTS",
+      staffStatus: "PENDING",
       events: {
         create: {
           type: "STATUS_CHANGE",
-          fromStatus: ticket.status,
+          fromStatus: ticket.customerStatus,
           toStatus: "WAITING_FOR_PARTS",
           isPublic: true,
           note: "Approved by customer via tracking page",
@@ -75,16 +75,17 @@ export async function rejectQuote(formData: FormData) {
     where: { code },
     include: { customer: { select: { name: true, whatsapp: true } } },
   });
-  if (!ticket || ticket.status !== "WAITING_FOR_QUOTE_APPROVAL") return;
+  if (!ticket || ticket.customerStatus !== "WAITING_FOR_APPROVAL") return;
 
   await db.ticket.update({
     where: { id: ticket.id },
     data: {
-      status: "DIAGNOSING",
+      customerStatus: "DIAGNOSING",
+      staffStatus: "OPEN",
       events: {
         create: {
           type: "STATUS_CHANGE",
-          fromStatus: ticket.status,
+          fromStatus: ticket.customerStatus,
           toStatus: "DIAGNOSING",
           isPublic: true,
           note: "Declined by customer via tracking page",
@@ -119,10 +120,10 @@ export async function submitRating(formData: FormData) {
 
   const ticket = await db.ticket.findUnique({
     where: { code },
-    select: { id: true, status: true, ratedAt: true },
+    select: { id: true, customerStatus: true, ratedAt: true },
   });
   // Only once, and only after the ticket is actually closed.
-  if (!ticket || ticket.status !== "CLOSED" || ticket.ratedAt) return;
+  if (!ticket || ticket.customerStatus !== "CLOSED" || ticket.ratedAt) return;
 
   await db.ticket.update({
     where: { id: ticket.id },

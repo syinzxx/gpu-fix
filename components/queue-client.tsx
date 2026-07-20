@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { TicketSlideOver, type SlideOverTicket, type Technician } from "@/components/ticket-slide-over";
-import { StatusBadge, PriorityBadge } from "@/components/status-badge";
+import { StaffStatusBadge, PriorityBadge } from "@/components/status-badge";
 import { Badge, Table, Th, Td } from "@/components/ui";
 import { etaUrgency, fmtDate, cn } from "@/lib/utils";
 
@@ -99,7 +99,7 @@ export function QueueClient({
                     </div>
                     <span className="block text-xs text-slate-400">{ticket.customer.name}</span>
                   </Td>
-                  <Td><StatusBadge status={ticket.status} /></Td>
+                  <Td><StaffStatusBadge status={ticket.staffStatus} /></Td>
                   <Td>
                     {ticket.assignedTo?.name ?? (
                       <Badge className="bg-slate-100 text-slate-600">{labels.unassigned}</Badge>

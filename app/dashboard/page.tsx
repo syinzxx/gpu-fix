@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { ACTIVE_STATUSES } from "@/lib/constants";
 import { Card, CardHeader } from "@/components/ui";
 import { etaUrgency } from "@/lib/utils";
 import { QueueClient } from "@/components/queue-client";
@@ -9,12 +8,12 @@ import { getT } from "@/lib/locale";
 export default async function DashboardPage() {
   const [activeCount, readyCount, quotesPending, lowStock, allOpen, technicians, t] =
     await Promise.all([
-      db.ticket.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
-      db.ticket.count({ where: { status: "READY_FOR_PICKUP" } }),
-      db.ticket.count({ where: { status: "WAITING_FOR_QUOTE_APPROVAL" } }),
+      db.ticket.count({ where: { staffStatus: { not: "CLOSED" } } }),
+      db.ticket.count({ where: { customerStatus: "READY_FOR_PICKUP" } }),
+      db.ticket.count({ where: { customerStatus: "WAITING_FOR_APPROVAL" } }),
       db.$queryRaw<{ cnt: bigint }[]>`SELECT COUNT(*) as cnt FROM Part WHERE quantity <= lowStockThreshold`,
       db.ticket.findMany({
-        where: { status: { not: "CLOSED" } },
+        where: { staffStatus: { not: "CLOSED" } },
         include: {
           customer: true,
           assignedTo: true,

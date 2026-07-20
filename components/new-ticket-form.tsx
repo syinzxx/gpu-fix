@@ -60,6 +60,7 @@ export function NewTicketForm({
   const [editPhone, setEditPhone]               = useState("");
   const [editWhatsapp, setEditWhatsapp]         = useState("");
   const [editEmail, setEditEmail]               = useState("");
+  const [editError, setEditError]               = useState<string | null>(null);
 
   // Ticket state
   const [priority, setPriority]   = useState("NORMAL");
@@ -113,22 +114,27 @@ export function NewTicketForm({
   }
 
   function handleSaveEdit() {
+    setEditError(null);
     startEditTransition(async () => {
-      const fd = new FormData();
-      fd.set("id",       selectedCustomer!.id);
-      fd.set("name",     editName);
-      fd.set("phone",    editPhone);
-      fd.set("whatsapp", editWhatsapp);
-      fd.set("email",    editEmail);
-      await updateCustomerInline(fd);
-      setSelectedCustomer({
-        ...selectedCustomer!,
-        name:     editName,
-        phone:    editPhone,
-        whatsapp: editWhatsapp || null,
-        email:    editEmail    || null,
-      });
-      setEditMode(false);
+      try {
+        const fd = new FormData();
+        fd.set("id",       selectedCustomer!.id);
+        fd.set("name",     editName);
+        fd.set("phone",    editPhone);
+        fd.set("whatsapp", editWhatsapp);
+        fd.set("email",    editEmail);
+        await updateCustomerInline(fd);
+        setSelectedCustomer({
+          ...selectedCustomer!,
+          name:     editName,
+          phone:    editPhone,
+          whatsapp: editWhatsapp || null,
+          email:    editEmail    || null,
+        });
+        setEditMode(false);
+      } catch (e) {
+        setEditError(e instanceof Error ? e.message : "Failed to save changes");
+      }
     });
   }
 
@@ -284,6 +290,9 @@ export function NewTicketForm({
                       />
                     </div>
                   </div>
+                  {editError && (
+                    <p className="text-xs font-semibold text-rose-600">{editError}</p>
+                  )}
                   <div className="flex gap-2">
                     <Button
                       type="button"

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { TicketSlideOver, type SlideOverTicket, type Technician } from "@/components/ticket-slide-over";
-import { StatusBadge, PriorityBadge } from "@/components/status-badge";
+import { StaffStatusBadge, PriorityBadge } from "@/components/status-badge";
 import { Badge, Table, Th, Td } from "@/components/ui";
 import { etaUrgency, fmtDate, cn } from "@/lib/utils";
 
@@ -24,6 +24,8 @@ export function TicketsClient({
     assigned: string;
     eta: string;
     received: string;
+    closed: string;
+    type: string;
     unassigned: string;
   };
 }) {
@@ -53,9 +55,11 @@ export function TicketsClient({
               <Th>{labels.code}</Th>
               <Th>{labels.device} · {labels.customer}</Th>
               <Th>{labels.status}</Th>
+              <Th>{labels.type}</Th>
               <Th>{labels.assigned}</Th>
               <Th>{labels.eta}</Th>
               <Th>{labels.received}</Th>
+              <Th>{labels.closed}</Th>
             </tr>
           </thead>
           <tbody>
@@ -100,7 +104,14 @@ export function TicketsClient({
                       <span className="ms-1 text-slate-300">{ticket.customer.phone}</span>
                     </span>
                   </Td>
-                  <Td><StatusBadge status={ticket.status} /></Td>
+                  <Td><StaffStatusBadge status={ticket.staffStatus} /></Td>
+                  <Td>
+                    {ticket.isWarrantyReturn ? (
+                      <Badge className="bg-amber-100 text-amber-700">Warranty</Badge>
+                    ) : (
+                      <Badge className="bg-slate-100 text-slate-500">New</Badge>
+                    )}
+                  </Td>
                   <Td>
                     {ticket.assignedTo?.name ?? (
                       <Badge className="bg-slate-100 text-slate-600">{labels.unassigned}</Badge>
@@ -109,6 +120,9 @@ export function TicketsClient({
                   <Td><EtaCell date={ticket.etaDate} /></Td>
                   <Td className="text-xs text-slate-400">
                     {fmtDate(ticket.createdAt)}
+                  </Td>
+                  <Td className="text-xs text-slate-400">
+                    {ticket.closedAt ? fmtDate(ticket.closedAt) : <span className="text-slate-300">—</span>}
                   </Td>
                 </tr>
               );

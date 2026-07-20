@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { STATUSES, statusLabelsFor, type TicketStatus } from "@/lib/constants";
 import { Card } from "@/components/ui";
 import { etaUrgency, cn } from "@/lib/utils";
 import { TicketsClient } from "@/components/tickets-client";
-import { getLocale, getT } from "@/lib/locale";
+import { getT } from "@/lib/locale";
 
 export default async function TicketsPage({
   searchParams,
@@ -13,10 +12,17 @@ export default async function TicketsPage({
 }) {
   const { status, q } = await searchParams;
 
-  const [tickets, technicians, locale, t] = await Promise.all([
+  const showAll = status === "ALL";
+  const showOpen = !status || status === "OPEN";
+  const showPending = status === "PENDING";
+  const showClosed = status === "CLOSED";
+
+  const [tickets, technicians, t] = await Promise.all([
     db.ticket.findMany({
       where: {
-        ...(status ? { status } : {}),
+        ...(showPending ? { staffStatus: "PENDING" } : {}),
+        ...(showClosed ? { staffStatus: "CLOSED" } : {}),
+        ...(showOpen ? { staffStatus: "OPEN" } : {}),
         ...(q
           ? {
               OR: [
@@ -41,7 +47,6 @@ export default async function TicketsPage({
       where: { active: true, role: { in: ["TECHNICIAN", "ADMIN"] } },
       orderBy: { name: "asc" },
     }),
-    getLocale(),
     getT(),
   ]);
 
@@ -57,16 +62,16 @@ export default async function TicketsPage({
     return a.createdAt.getTime() - b.createdAt.getTime();
   });
 
-  const statusLabels = statusLabelsFor(locale);
-
   const tableLabels = {
     code: t.code,
     device: t.device,
     customer: t.customerCard,
     status: t.status,
+    type: "Type",
     assigned: t.assigned,
     eta: "ETA",
     received: t.received,
+    closed: "Closed",
     unassigned: t.unassigned,
   };
 
@@ -90,27 +95,46 @@ export default async function TicketsPage({
           href="/dashboard/tickets"
           className={cn(
             "rounded-full px-3 py-1.5 text-xs font-semibold",
-            !status
+            showOpen
               ? "bg-slate-900 text-white"
               : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
           )}
         >
-          {t.all}
+          Open
         </Link>
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/dashboard/tickets?status=${s}`}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold",
-              status === s
-                ? "bg-slate-900 text-white"
-                : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
-            )}
-          >
-            {statusLabels[s as TicketStatus]}
-          </Link>
-        ))}
+        <Link
+          href="/dashboard/tickets?status=PENDING"
+          className={cn(
+            "rounded-full px-3 py-1.5 text-xs font-semibold",
+            showPending
+              ? "bg-slate-900 text-white"
+              : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
+          )}
+        >
+          Pending
+        </Link>
+        <Link
+          href="/dashboard/tickets?status=CLOSED"
+          className={cn(
+            "rounded-full px-3 py-1.5 text-xs font-semibold",
+            showClosed
+              ? "bg-slate-900 text-white"
+              : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
+          )}
+        >
+          Closed
+        </Link>
+        <Link
+          href="/dashboard/tickets?status=ALL"
+          className={cn(
+            "rounded-full px-3 py-1.5 text-xs font-semibold",
+            showAll
+              ? "bg-slate-900 text-white"
+              : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
+          )}
+        >
+          All
+        </Link>
       </div>
 
       {/* Search */}

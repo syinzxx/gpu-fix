@@ -4,23 +4,27 @@ import { useEffect, useTransition, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  STATUS_FLOW,
-  STATUS_LABELS,
-  type TicketStatus,
+  STAFF_STATUSES,
+  STAFF_STATUS_LABELS,
+  STAFF_STATUS_COLORS,
+  type StaffStatus,
 } from "@/lib/constants";
-import { StatusBadge, PriorityBadge } from "@/components/status-badge";
+import { StaffStatusBadge, PriorityBadge } from "@/components/status-badge";
 import { Button, Input, Select, Textarea } from "@/components/ui";
 import { etaUrgency, fmtDate, cn } from "@/lib/utils";
-import { changeStatus, assignTicket, addNote, updateEta } from "@/app/actions/tickets";
+import { setStaffStatus, assignTicket, addNote, updateEta } from "@/app/actions/tickets";
 import { uploadAttachment } from "@/app/actions/attachments";
 
 export type SlideOverTicket = {
   id: string;
   code: string;
-  status: string;
+  staffStatus: string;
+  customerStatus: string;
   priority: string;
   etaDate: Date | null;
   createdAt: Date;
+  closedAt: Date | null;
+  isWarrantyReturn: boolean;
   brand: string;
   model: string;
   deviceType: string;
@@ -60,7 +64,6 @@ export function TicketSlideOver({
   const [actionError, setActionError] = useState<string | null>(null);
   const [noteKey, setNoteKey] = useState(0);
 
-  const nextStatuses = STATUS_FLOW[ticket.status as TicketStatus] ?? [];
   const urgency = etaUrgency(ticket.etaDate);
   const etaLabel =
     urgency === "overdue" ? "Overdue" :
@@ -95,7 +98,7 @@ export function TicketSlideOver({
                 <span className="font-mono text-lg font-bold tracking-widest text-white">
                   {ticket.code}
                 </span>
-                <StatusBadge status={ticket.status} />
+                <StaffStatusBadge status={ticket.staffStatus} />
                 <PriorityBadge priority={ticket.priority} />
               </div>
               <p className="mt-1 truncate text-sm text-slate-400">
@@ -134,58 +137,43 @@ export function TicketSlideOver({
         </div>
 
         <div className="flex-1 divide-y divide-slate-100">
-          {/* Move to */}
-          {nextStatuses.length > 0 && (
-            <section className="px-5 py-4">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-400">
-                Move to
-              </p>
-              <div className="flex flex-col gap-2">
-                {nextStatuses.map((next, i) => {
-                  if (next === "WAITING_FOR_QUOTE_APPROVAL") {
-                    return (
-                      <Link
-                        key={next}
-                        href={`/dashboard/tickets/${ticket.id}`}
-                        className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
-                      >
-                        → {STATUS_LABELS[next]}
-                        <span className="ms-auto text-xs font-normal text-slate-400">
-                          set quote on full page
-                        </span>
-                      </Link>
-                    );
-                  }
-                  return (
-                    <form
-                      key={next}
-                      action={async (fd) => {
-                        try {
-                          setActionError(null);
-                          await changeStatus(fd);
-                          onClose();
-                          refresh();
-                        } catch (e) {
-                          setActionError(e instanceof Error ? e.message : "Failed to update status");
-                        }
-                      }}
-                    >
-                      <input type="hidden" name="ticketId" value={ticket.id} />
-                      <input type="hidden" name="toStatus" value={next} />
-                      <Button
-                        type="submit"
-                        variant={i === 0 ? "primary" : "secondary"}
-                        className="w-full justify-start"
-                        disabled={isPending}
-                      >
-                        → {STATUS_LABELS[next]}
-                      </Button>
-                    </form>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          {/* Staff status */}
+          <section className="px-5 py-4">
+            <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-400">
+              Ticket status
+            </p>
+            <div className="flex gap-2">
+              {STAFF_STATUSES.map((s) => (
+                <form
+                  key={s}
+                  action={async (fd: FormData) => {
+                    try {
+                      setActionError(null);
+                      await setStaffStatus(fd);
+                      refresh();
+                    } catch (e) {
+                      setActionError(e instanceof Error ? e.message : "Failed to update status");
+                    }
+                  }}
+                >
+                  <input type="hidden" name="ticketId" value={ticket.id} />
+                  <input type="hidden" name="staffStatus" value={s} />
+                  <button
+                    type="submit"
+                    disabled={ticket.staffStatus === s || isPending}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 transition-all",
+                      ticket.staffStatus === s
+                        ? STAFF_STATUS_COLORS[s as StaffStatus]
+                        : "bg-white text-slate-500 ring-slate-200 hover:ring-slate-300"
+                    )}
+                  >
+                    {STAFF_STATUS_LABELS[s as StaffStatus]}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </section>
 
           {/* Assign */}
           <section className="px-5 py-4">

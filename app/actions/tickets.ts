@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { requireUser, requireRole } from "@/lib/auth";
 import { generateTicketCode, money } from "@/lib/utils";
 import { fmtDate } from "@/lib/utils";
-import { STATUS_FLOW, PAYMENT_METHODS, type TicketStatus, type PaymentMethod } from "@/lib/constants";
+import { STATUS_FLOW, type TicketStatus } from "@/lib/constants";
 import { sendTicketStatusWhatsapp } from "@/lib/whatsapp";
 
 async function uniqueTicketCode(): Promise<string> {
@@ -21,6 +21,7 @@ async function uniqueTicketCode(): Promise<string> {
 export async function createTicket(formData: FormData) {
   const user = await requireUser();
 
+  const existingCustomerId = (formData.get("customerId") as string)?.trim() || null;
   const customerName = (formData.get("customerName") as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim();
   const whatsapp = ((formData.get("whatsapp") as string)?.trim() || phone) ?? null;
@@ -28,34 +29,35 @@ export async function createTicket(formData: FormData) {
   const model = (formData.get("model") as string)?.trim();
   const issue = (formData.get("issue") as string)?.trim();
 
-  if (!customerName || !phone || !brand || !model || !issue) {
-    throw new Error("Missing required fields");
+  if (!existingCustomerId && (!customerName || !phone)) {
+    throw new Error("Customer name and phone are required");
+  }
+  if (!brand || !model || !issue) {
+    throw new Error("Brand, model, and issue are required");
   }
 
-  // Reuse an existing customer with the same phone number
-  let customer = await db.customer.findFirst({ where: { phone } });
-  if (!customer) {
-    customer = await db.customer.create({
-      data: {
-        name: customerName,
-        phone,
-        whatsapp,
-        email: (formData.get("email") as string)?.trim() || null,
-      },
-    });
+  let customer;
+  if (existingCustomerId) {
+    customer = await db.customer.findUnique({ where: { id: existingCustomerId } });
+    if (!customer) throw new Error("Selected customer not found");
+  } else {
+    customer = await db.customer.findFirst({ where: { phone: phone! } });
+    if (!customer) {
+      customer = await db.customer.create({
+        data: {
+          name: customerName!,
+          phone: phone!,
+          whatsapp,
+          email: (formData.get("email") as string)?.trim() || null,
+        },
+      });
+    }
   }
 
   const code = await uniqueTicketCode();
   const etaRaw = formData.get("etaDate") as string;
   const isWarrantyReturn = formData.get("isWarrantyReturn") === "on";
   const warrantyTicketId = (formData.get("warrantyTicketId") as string)?.trim() || null;
-
-  const depositRaw = formData.get("depositAmount") as string;
-  const depositAmount = depositRaw ? parseFloat(depositRaw) : 0;
-  const depositMethodRaw = (formData.get("depositMethod") as string) || "CASH";
-  const depositMethod: PaymentMethod = PAYMENT_METHODS.includes(depositMethodRaw as PaymentMethod)
-    ? (depositMethodRaw as PaymentMethod)
-    : "CASH";
 
   const signatureRaw = (formData.get("intakeSignature") as string) || "";
   const intakeSignature =
@@ -78,6 +80,7 @@ export async function createTicket(formData: FormData) {
       assignedToId: (formData.get("assignedToId") as string) || null,
       isWarrantyReturn,
       warrantyTicketId,
+      workType: (formData.get("workType") as string)?.trim() || null,
       intakeSignature,
       createdById: user.id,
       events: {
@@ -103,27 +106,6 @@ export async function createTicket(formData: FormData) {
         label: t.label,
         sortOrder: t.sortOrder,
       })),
-    });
-  }
-
-  if (depositAmount > 0) {
-    await db.payment.create({
-      data: {
-        ticketId: ticket.id,
-        amount: depositAmount,
-        method: depositMethod,
-        kind: "DEPOSIT",
-        receivedById: user.id,
-      },
-    });
-    await db.ticketEvent.create({
-      data: {
-        ticketId: ticket.id,
-        type: "PAYMENT",
-        note: `Deposit recorded: ${money(depositAmount)} (${depositMethod})`,
-        isPublic: false,
-        createdById: user.id,
-      },
     });
   }
 

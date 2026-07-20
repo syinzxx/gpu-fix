@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import {
-  statusLabelsFor,
-  STATUS_COLORS,
-  ACTIVE_STATUSES,
-  type TicketStatus,
+  customerStatusLabelsFor,
+  CUSTOMER_STATUS_COLORS,
+  type CustomerStatus,
 } from "@/lib/constants";
 import { fmtDate, fmtDateTime, money, paymentsTotal } from "@/lib/utils";
 import { getSettings } from "@/lib/settings";
@@ -62,7 +61,7 @@ export default async function TrackPage({
     getLocale(),
   ]);
 
-  const statusLabel = (s: TicketStatus) => statusLabelsFor(locale)[s];
+  const statusLabel = (s: CustomerStatus) => customerStatusLabelsFor(locale)[s];
 
   if (!ticket) {
     return (
@@ -90,15 +89,14 @@ export default async function TrackPage({
     );
   }
 
-  const status = ticket.status as TicketStatus;
-  const isActive = ACTIVE_STATUSES.includes(status);
-  const queuePosition = isActive
+  const customerStatus = ticket.customerStatus as CustomerStatus;
+  const queuePosition = ticket.staffStatus !== "CLOSED"
     ? (await db.ticket.count({
-        where: { status: { in: [...ACTIVE_STATUSES] }, createdAt: { lt: ticket.createdAt } },
+        where: { staffStatus: { not: "CLOSED" }, createdAt: { lt: ticket.createdAt } },
       })) + 1
     : null;
 
-  const showInvoice = ticket.invoice && (status === "READY_FOR_PICKUP" || status === "CLOSED");
+  const showInvoice = ticket.invoice && (customerStatus === "READY_FOR_PICKUP" || customerStatus === "CLOSED");
   const totalPaid = paymentsTotal(ticket.payments);
   const balanceDue = ticket.invoice ? ticket.invoice.total - totalPaid : 0;
 
@@ -141,8 +139,8 @@ export default async function TrackPage({
           <p className="text-xs font-semibold text-slate-400">{t.currentStatus}</p>
           <p className="text-xs text-slate-400">{t.updated} {fmtDate(ticket.updatedAt)}</p>
         </div>
-        <p className={`mt-2.5 inline-flex rounded-full px-4 py-1.5 text-sm font-bold ${STATUS_COLORS[status]}`}>
-          {statusLabel(status)}
+        <p className={`mt-2.5 inline-flex rounded-full px-4 py-1.5 text-sm font-bold ${CUSTOMER_STATUS_COLORS[customerStatus]}`}>
+          {statusLabel(customerStatus)}
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
@@ -160,7 +158,7 @@ export default async function TrackPage({
           </div>
         </div>
 
-        {status === "WAITING_FOR_QUOTE_APPROVAL" && ticket.quoteAmount != null && (
+        {customerStatus === "WAITING_FOR_APPROVAL" && ticket.quoteAmount != null && (
           <div className="mt-4 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100">
             <p className="text-xs font-bold text-amber-700">{t.repairQuote}</p>
             <p className="mt-1 font-display text-3xl font-bold tracking-tight text-amber-800">
@@ -188,7 +186,7 @@ export default async function TrackPage({
           </div>
         )}
 
-        {status === "READY_FOR_PICKUP" && (
+        {customerStatus === "READY_FOR_PICKUP" && (
           <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-center ring-1 ring-emerald-100">
             <p className="font-display text-xl font-bold text-emerald-700">{t.readyPickupMsg}</p>
             <p className="mt-1 text-xs text-emerald-600">{t.bringTicket}</p>
@@ -249,7 +247,7 @@ export default async function TrackPage({
       )}
 
       {/* Post-repair rating */}
-      {status === "CLOSED" && (
+      {customerStatus === "CLOSED" && (
         <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm shadow-slate-900/4 ring-1 ring-slate-900/5">
           <p className="text-sm font-bold text-slate-900">{t.rateExperience}</p>
           {ticket.ratedAt ? (
@@ -330,7 +328,7 @@ export default async function TrackPage({
                       <span className="whitespace-pre-wrap">{e.note}</span>
                     ) : e.fromStatus ? (
                       <span className="font-semibold text-slate-900">
-                        {statusLabel(e.toStatus as TicketStatus)}
+                        {statusLabel(e.toStatus as CustomerStatus)}
                       </span>
                     ) : (
                       <>

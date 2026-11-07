@@ -13,7 +13,7 @@ const OPEN_TIMEOUT_MS = 20000;
 const EXTRACT_TIMEOUT_MS = 120000;
 const OPEN_POLL_MS = 700;
 const OPEN_CHECK_TIMEOUT_MS = 2500; // NexusBV ignores requests while it starts up
-const CLOSE_TIMEOUT_MS = 15000;
+const CLOSE_TIMEOUT_MS = 30000;
 const CLOSE_RETRY_MS = 4000; // a window still loading a board can miss the first request
 
 class NexusError extends Error {

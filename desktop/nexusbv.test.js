@@ -160,7 +160,7 @@ test("a different board replaces the open window, so only one exists", async () 
   fs.rmSync(dir, { recursive: true });
 });
 
-test("a window that refuses to close stops the open", { timeout: 20000 }, async () => {
+test("a window that refuses to close stops the open", { timeout: 40000 }, async () => {
   const { dir, board, pdf, other } = twoFiles();
   const fake = fakeNexus(dir, () => stateFor(board, pdf));
   const processes = { count: async () => 1, closeAll: async () => {} };

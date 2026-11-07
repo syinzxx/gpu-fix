@@ -6,12 +6,14 @@ import type { PairFile } from "@/lib/library/pairing";
 import type { Translations } from "@/lib/i18n";
 
 type Result = { ok: boolean; code?: string; paired?: boolean };
+type StateResult = Result & { board?: string | null };
 
 type NexusBridge = {
   open: (files: { board: string | null; pdf: string | null }) => Promise<Result>;
   selectNet: (net: string) => Promise<Result>;
   selectComponent: (refdes: string) => Promise<Result>;
   selectPin: (refdes: string, pin: string) => Promise<Result>;
+  getState: () => Promise<StateResult>;
 };
 
 declare global {
@@ -22,7 +24,13 @@ declare global {
 
 const subscribe = () => () => {};
 
-function errorText(code: string | undefined, t: Translations) {
+/** Windows paths match regardless of case or slash direction. */
+export function sameFile(a?: string | null, b?: string | null) {
+  const clean = (file: string) => file.replace(/\//g, "\\").toLowerCase();
+  return !!a && !!b && clean(a) === clean(b);
+}
+
+export function nexusErrorText(code: string | undefined, t: Translations) {
   if (code === "NOT_INSTALLED") return t.libNexusNotInstalled;
   if (code === "NOT_RUNNING" || code === "TIMEOUT") return t.libNexusNotRunning;
   if (code === "NOT_FOUND") return t.libNexusNotFound;
@@ -89,7 +97,7 @@ export function NexusBVPanel({
     setMessage(null);
     start(async () => {
       const result = await action();
-      setMessage(result.ok ? { text: success(result), ok: true } : { text: errorText(result.code, t), ok: false });
+      setMessage(result.ok ? { text: success(result), ok: true } : { text: nexusErrorText(result.code, t), ok: false });
     });
   }
 

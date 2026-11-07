@@ -11,8 +11,10 @@ import {
   removeBoardAlias,
   updateBoard,
 } from "@/app/actions/library";
+import { BoardNotes } from "@/components/board-notes";
 import { AddReadingForm } from "@/components/board-readings";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { FaultShortcut } from "@/components/fault-shortcut";
 import { Icon } from "@/components/icons";
 import { BoardInput, BoardOptions } from "@/components/library-picker";
 import { NexusBVPanel } from "@/components/nexusbv-panel";
@@ -21,6 +23,7 @@ import { Badge, Button, Card, CardHeader, EmptyState, Input, Label, Textarea } f
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canOpenLibrary } from "@/lib/library/access";
+import { faultStepsFor } from "@/lib/library/faults";
 import { formatSpread, formatValue, summarise } from "@/lib/library/measurements";
 import { choosePair } from "@/lib/library/pairing";
 import { loadBoardSummaries } from "@/lib/library/queries";
@@ -63,6 +66,11 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
 
   const canEdit = session?.user.role === "ADMIN" || session?.user.role === "TECHNICIAN";
   const pickerBoards = canEdit ? await loadBoardSummaries() : [];
+  const notes = await db.boardNote.findMany({
+    where: { OR: [{ boardId: board.id }, { boardId: null, generation: board.generation }] },
+    orderBy: { createdAt: "asc" },
+    include: { createdBy: { select: { name: true } } },
+  });
   const files = board.files
     .filter((f) => !f.duplicateOfId)
     .sort((a, b) => TYPE_ORDER.indexOf(a.fileType) - TYPE_ORDER.indexOf(b.fileType) || a.originalName.localeCompare(b.originalName));
@@ -147,6 +155,8 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
             </ul>
             <p className="border-t border-slate-100 px-5 py-2.5 text-sm text-slate-500">{t.libFilesNote}</p>
           </Card>
+
+          <BoardNotes boardId={board.id} generation={board.generation} notes={notes} canEdit={canEdit} t={t} />
 
           <Card>
             <CardHeader title={`${t.libReadings} (${board.measurements.length})`} />
@@ -241,6 +251,12 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
             pdfs={openable.filter((f) => f.fileType === "SCHEMATIC" || f.fileType === "BOARDVIEW_PDF")}
             defaultBoard={pair.board?.path ?? null}
             defaultPdf={pair.pdf?.path ?? null}
+            t={t}
+          />
+          <FaultShortcut
+            steps={faultStepsFor(board.gpuMaker)}
+            rows={readingRows}
+            boardPaths={openable.filter((f) => f.fileType === "BOARDVIEW").map((f) => f.path)}
             t={t}
           />
           <Card>

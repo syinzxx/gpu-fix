@@ -206,6 +206,35 @@ export const translations = {
     staffDeleteConfirm: "Permanently delete this account?",
     staffDeleteEffect: "This cannot be undone. Tickets they created move to you, assigned tickets become unassigned, and their name is removed from ticket history.",
 
+    // Board notes
+    noteTitle: "Known faults and notes",
+    noteEmpty: "No notes yet. Add what you learn at the bench.",
+    noteFaults: "Known faults",
+    notePowerOn: "Power-on sequence",
+    noteRails: "Rail notes",
+    noteKind: "Type",
+    noteScope: "Applies to",
+    noteThisBoard: "This board only",
+    noteAll: "All",
+    noteHeading: "Heading",
+    noteDetail: "Details",
+    noteAdd: "Add note",
+    noteDeleteConfirm: "Remove this note?",
+
+    // Fault shortcut
+    faultTitle: "No display checks",
+    faultHint: "Open this board in NexusBV first. Each check selects the net there, and shows your saved readings when you have them.",
+    faultWrongBoard: "NexusBV has a different board open. Use Open both first.",
+    faultNoNet: "None of these names are on this board:",
+    faultPower12v: "12 V input",
+    faultPcieReset: "PCIe reset",
+    faultPcieClock: "PCIe clock",
+    faultGpuClock: "GPU clock",
+    faultGpuCore: "GPU core power",
+    faultMemoryPower: "Memory power",
+    faultRail1v8: "1.8 V",
+    faultMemoryRef: "Memory reference",
+
     // Board library
     library: "Library",
     libraryDesc: "Find any board by any of its names.",
@@ -758,6 +787,35 @@ export const translations = {
     staffDelete: "حذف",
     staffDeleteConfirm: "حذف هذا الحساب نهائياً؟",
     staffDeleteEffect: "لا يمكن التراجع عن ذلك. ستنتقل إليك التذاكر التي أنشأها، وستصبح التذاكر المسندة إليه بلا مسؤول، وسيُزال اسمه من سجل التذاكر.",
+
+    // ملاحظات اللوحة
+    noteTitle: "الأعطال المعروفة والملاحظات",
+    noteEmpty: "لا توجد ملاحظات بعد. أضف ما تتعلمه أثناء الإصلاح.",
+    noteFaults: "الأعطال المعروفة",
+    notePowerOn: "تسلسل التشغيل",
+    noteRails: "ملاحظات خطوط الجهد",
+    noteKind: "النوع",
+    noteScope: "ينطبق على",
+    noteThisBoard: "هذه اللوحة فقط",
+    noteAll: "كل",
+    noteHeading: "العنوان",
+    noteDetail: "التفاصيل",
+    noteAdd: "إضافة ملاحظة",
+    noteDeleteConfirm: "إزالة هذه الملاحظة؟",
+
+    // اختصار الأعطال
+    faultTitle: "فحوصات عدم وجود صورة",
+    faultHint: "افتح هذه اللوحة في NexusBV أولاً. كل فحص يحدد الـ Net هناك ويعرض قراءاتك المحفوظة إن وجدت.",
+    faultWrongBoard: "يوجد لوحة أخرى مفتوحة في NexusBV. استخدم فتح الاثنين أولاً.",
+    faultNoNet: "لا يوجد أي من هذه الأسماء في هذه اللوحة:",
+    faultPower12v: "دخل 12 فولت",
+    faultPcieReset: "إعادة ضبط PCIe",
+    faultPcieClock: "ساعة PCIe",
+    faultGpuClock: "ساعة المعالج",
+    faultGpuCore: "جهد نواة المعالج",
+    faultMemoryPower: "جهد الذاكرة",
+    faultRail1v8: "1.8 فولت",
+    faultMemoryRef: "مرجع الذاكرة",
 
     // مكتبة اللوحات
     library: "المكتبة",

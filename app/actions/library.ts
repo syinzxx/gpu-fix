@@ -157,6 +157,7 @@ export async function mergeBoardInto(boardId: string, form: FormData) {
   await addAliases(target.id, aliases.map((a) => a.alias));
   await db.ticket.updateMany({ where: { boardId }, data: { boardId: target.id } });
   await db.measurement.updateMany({ where: { boardId }, data: { boardId: target.id } });
+  await db.boardNote.updateMany({ where: { boardId }, data: { boardId: target.id } });
   await db.board.update({ where: { id: target.id }, data: { manuallyEdited: true } });
   await db.board.delete({ where: { id: boardId } });
   refresh(target.id);
@@ -223,6 +224,33 @@ export async function deleteMeasurement(id: string, boardId: string) {
   refresh(boardId);
 }
 
+export async function addBoardNote(boardId: string, form: FormData) {
+  await requireLibraryAccess();
+  const user = await requireRole("ADMIN", "TECHNICIAN");
+  const kind = text(form, "kind");
+  const title = text(form, "title");
+  if (!["FAULT", "POWER_ON", "RAIL"].includes(kind) || !title) throw new Error("Choose a type and enter a heading.");
+  const board = await db.board.findUniqueOrThrow({ where: { id: boardId } });
+  const forFamily = text(form, "scope") === "FAMILY";
+  await db.boardNote.create({
+    data: {
+      boardId: forFamily ? null : boardId,
+      generation: forFamily ? board.generation : null,
+      kind,
+      title,
+      body: optional(form, "body"),
+      createdById: user.id,
+    },
+  });
+  refresh(boardId);
+}
+
+export async function deleteBoardNote(id: string, boardId: string) {
+  await requireEditor();
+  await db.boardNote.delete({ where: { id } });
+  refresh(boardId);
+}
+
 async function requireFolderAdmin() {
   await requireLibraryAccess();
   return requireRole("ADMIN");
@@ -246,7 +274,13 @@ export async function removeLibraryFolder(rootId: string) {
   await db.boardFile.updateMany({ where: { duplicateOf: { libraryRootId: rootId } }, data: { duplicateOfId: null } });
   await db.libraryRoot.delete({ where: { id: rootId } });
   await db.board.deleteMany({
-    where: { manuallyEdited: false, files: { none: {} }, tickets: { none: {} }, measurements: { none: {} } },
+    where: {
+      manuallyEdited: false,
+      files: { none: {} },
+      tickets: { none: {} },
+      measurements: { none: {} },
+      notesList: { none: {} },
+    },
   });
   refresh();
   revalidatePath("/dashboard/library/folders");

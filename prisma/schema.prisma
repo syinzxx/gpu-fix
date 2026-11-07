@@ -25,6 +25,7 @@ model User {
   expensesCreated Expense[]    @relation("ExpensesCreated")
   attachmentsUploaded Attachment[]          @relation("AttachmentsUploaded")
   measurements   Measurement[]
+  boardNotes     BoardNote[]
   checklistItemsChecked TicketChecklistItem[] @relation("ChecklistCheckedBy")
 }
 
@@ -316,6 +317,7 @@ model Board {
   files          BoardFile[]
   tickets        Ticket[]
   measurements   Measurement[]
+  notesList      BoardNote[]
 
   @@index([gpuModel])
   @@index([cardBrand])
@@ -385,4 +387,22 @@ model Measurement {
 
   @@index([boardId])
   @@index([target])
+}
+
+// Kind: FAULT | POWER_ON | RAIL. A note belongs to one board, or to a whole
+// generation (boardId null) so one write-up covers every card in the family.
+model BoardNote {
+  id          String   @id @default(cuid())
+  boardId     String?
+  board       Board?   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  generation  String?
+  kind        String
+  title       String
+  body        String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([boardId])
+  @@index([generation])
 }

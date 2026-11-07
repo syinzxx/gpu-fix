@@ -171,6 +171,25 @@ export const translations = {
     whatsappNumberHint: "Used for the chat button on the website. Falls back to the shop phone if empty.",
     socialHint: "Leave a link empty to hide its button on the website.",
 
+    // WhatsApp API status
+    whatsappApiCard:    "WhatsApp API",
+    whatsappApiDesc:    "Required to send automated messages. Set these in your hosting environment — not in this form.",
+    envVarSet:          "set",
+    envVarMissing:      "not set",
+    webhookUrlLabel:    "Webhook URL (register in Meta developer console)",
+    whatsappConfigOk:   "All credentials are set. Messages will be sent via Meta Cloud API.",
+    whatsappConfigSkip: "Some credentials are missing. Messages will be logged as SKIPPED and staff must send manually.",
+
+    // WhatsApp logs page
+    whatsappLogs:      "WhatsApp",
+    whatsappLogsTitle: "WhatsApp log",
+    whatsappLogsDesc:  "All outbound messages across every ticket.",
+    noLogsYet:         "No messages sent yet.",
+    logTo:             "To",
+    logBody:           "Message",
+    logSentAt:         "Sent",
+    filterAll:         "All",
+
     // Hero / landing
     heroTitleLine1: "Expert GPU repair,",
     heroTitleAccent: "done right.",
@@ -564,6 +583,25 @@ export const translations = {
     whatsappNumberLabel: "رقم الواتساب",
     whatsappNumberHint: "يُستخدم لزر الدردشة في الموقع. إذا تُرك فارغاً، يُستخدم هاتف المتجر بدلاً منه.",
     socialHint: "اترك الرابط فارغاً لإخفاء زره في الموقع.",
+
+    // WhatsApp API status
+    whatsappApiCard:    "واجهة برمجة واتساب",
+    whatsappApiDesc:    "مطلوبة لإرسال الرسائل التلقائية. اضبطها في بيئة الاستضافة — وليس في هذا النموذج.",
+    envVarSet:          "مضبوط",
+    envVarMissing:      "غير مضبوط",
+    webhookUrlLabel:    "رابط Webhook (سجّله في Meta developer console)",
+    whatsappConfigOk:   "جميع بيانات الاعتماد مضبوطة. ستُرسَل الرسائل عبر Meta Cloud API.",
+    whatsappConfigSkip: "بعض بيانات الاعتماد مفقودة. ستُسجَّل الرسائل كـ SKIPPED وعلى الموظفين الإرسال يدوياً.",
+
+    // WhatsApp logs page
+    whatsappLogs:      "واتساب",
+    whatsappLogsTitle: "سجل واتساب",
+    whatsappLogsDesc:  "جميع الرسائل الصادرة عبر كل التذاكر.",
+    noLogsYet:         "لم تُرسَل رسائل بعد.",
+    logTo:             "إلى",
+    logBody:           "الرسالة",
+    logSentAt:         "أُرسلت",
+    filterAll:         "الكل",
 
     // Hero / landing
     heroTitleLine1: "إصلاح احترافي لكروت الشاشة،",

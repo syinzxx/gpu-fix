@@ -26,16 +26,15 @@ export function normalizePhone(raw: string): string {
 }
 
 /**
- * Resolves the shop's WhatsApp number from env overrides, falling back to the
- * saved settings phone. Uses || (not ??) so empty strings fall through.
+ * Resolves the shop's WhatsApp number from the settings returned by
+ * getSettings(), which already folds in the env fallbacks (SHOP_WHATSAPP /
+ * SHOP_PHONE) — DB wins, like every other setting.
  *
- * Server-only in practice: SHOP_WHATSAPP / SHOP_PHONE are non-NEXT_PUBLIC env
- * vars, so they only resolve on the server. Call this from server components.
+ * Chain: settings.whatsappNumber -> settings.shopPhone -> null. Uses ||
+ * (not ??) so empty strings fall through.
  */
-export function resolveWhatsappNumber(settingsPhone: string): string | null {
-  return (
-    process.env.SHOP_WHATSAPP || process.env.SHOP_PHONE || settingsPhone || null
-  );
+export function resolveWhatsappNumber(settings: { whatsappNumber: string; shopPhone: string }): string | null {
+  return settings.whatsappNumber || settings.shopPhone || null;
 }
 
 /** Builds a wa.me chat link with a prefilled message. */

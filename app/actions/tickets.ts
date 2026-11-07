@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser, requireRole } from "@/lib/auth";
-import { generateTicketCode, money } from "@/lib/utils";
+import { generateTicketCode } from "@/lib/utils";
 import { fmtDate } from "@/lib/utils";
 import {
   CUSTOMER_STATUSES,
@@ -31,6 +31,7 @@ export async function createTicket(formData: FormData) {
   const customerName = (formData.get("customerName") as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim();
   const whatsapp = ((formData.get("whatsapp") as string)?.trim() || phone) ?? null;
+  const locale = (formData.get("locale") as string) === "en" ? "en" : "ar";
   const brand = (formData.get("brand") as string)?.trim();
   const model = (formData.get("model") as string)?.trim();
   const issue = (formData.get("issue") as string)?.trim();
@@ -47,14 +48,24 @@ export async function createTicket(formData: FormData) {
     customer = await db.customer.findUnique({ where: { id: existingCustomerId } });
     if (!customer) throw new Error("Selected customer not found");
   } else {
+    const email = (formData.get("email") as string)?.trim() || null;
+    const rawWhatsapp = (formData.get("whatsapp") as string)?.trim() || null;
     customer = await db.customer.findFirst({ where: { phone: phone! } });
     if (!customer) {
       customer = await db.customer.create({
+        data: { name: customerName!, phone: phone!, whatsapp, email, locale },
+      });
+    } else {
+      // Returning customer matched by phone — refresh their contact details so a
+      // stale name or a missing WhatsApp number doesn't silently suppress the
+      // status notifications (sendWhatsapp no-ops when `to` is null).
+      customer = await db.customer.update({
+        where: { id: customer.id },
         data: {
-          name: customerName!,
-          phone: phone!,
-          whatsapp,
-          email: (formData.get("email") as string)?.trim() || null,
+          name: customerName || customer.name,
+          whatsapp: rawWhatsapp || customer.whatsapp || phone,
+          email: email ?? customer.email,
+          locale,
         },
       });
     }
@@ -124,6 +135,7 @@ export async function createTicket(formData: FormData) {
     code: ticket.code,
     status: "RECEIVED" as CustomerStatus,
     device: `${brand} ${model}`,
+    locale: customer.locale,
   });
 
   revalidatePath("/dashboard/tickets");
@@ -180,6 +192,7 @@ export async function setCustomerStatus(formData: FormData) {
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: customerStatus === "WAITING_FOR_APPROVAL" ? parseFloat(quoteRaw!) : ticket.quoteAmount,
     eta: ticket.etaDate ? fmtDate(ticket.etaDate) : null,
+    locale: ticket.customer.locale,
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -352,6 +365,7 @@ export async function resendWhatsapp(formData: FormData) {
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
     eta: resendEta,
+    locale: ticket.customer.locale,
   });
 
   revalidatePath(`/dashboard/tickets/${ticketId}`);

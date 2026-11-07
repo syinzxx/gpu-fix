@@ -38,6 +38,10 @@ export default function GpuHero() {
   );
 
   useEffect(() => {
+    // Detect browser-only capabilities (WebGL, reduced-motion) after mount —
+    // these can't be read during SSR/render, so a one-shot setState here is the
+    // intended pattern, not a cascading-render smell.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEnv({
       webgl: supportsWebgl(),
       animated: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,

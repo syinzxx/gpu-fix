@@ -60,21 +60,22 @@ export async function updateCustomer(formData: FormData) {
 export async function saveSettings(formData: FormData) {
   await requireRole("ADMIN");
 
+  const data = {
+    shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
+    shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
+    shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
+    shopHours: (formData.get("shopHours") as string)?.trim() || "",
+    whatsappNumber: (formData.get("whatsappNumber") as string)?.trim() || "",
+    socialFacebook: (formData.get("socialFacebook") as string)?.trim() || "",
+    socialYoutube: (formData.get("socialYoutube") as string)?.trim() || "",
+    socialTiktok: (formData.get("socialTiktok") as string)?.trim() || "",
+    socialDiscord: (formData.get("socialDiscord") as string)?.trim() || "",
+  };
+
   await db.settings.upsert({
     where: { id: "global" },
-    create: {
-      id: "global",
-      shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
-      shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
-      shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
-      shopHours: (formData.get("shopHours") as string)?.trim() || "",
-    },
-    update: {
-      shopName: (formData.get("shopName") as string)?.trim() || "GPU Fix Shop",
-      shopAddress: (formData.get("shopAddress") as string)?.trim() || "",
-      shopPhone: (formData.get("shopPhone") as string)?.trim() || "",
-      shopHours: (formData.get("shopHours") as string)?.trim() || "",
-    },
+    create: { id: "global", ...data },
+    update: data,
   });
 
   revalidatePath("/dashboard/settings");

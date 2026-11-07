@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui";
 import { etaUrgency } from "@/lib/utils";
 import { QueueClient } from "@/components/queue-client";
 import { getT } from "@/lib/locale";
+import { Icon } from "@/components/icons";
 
 export default async function DashboardPage() {
   const [activeCount, readyCount, quotesPending, lowStock, allOpen, technicians, t] =
@@ -61,8 +62,8 @@ export default async function DashboardPage() {
       sub: overdueCount > 0 ? `${overdueCount} overdue` : null,
       subAlert: true,
     },
-    { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?status=PENDING" },
-    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?status=PENDING" },
+    { label: t.readyForPickup, value: readyCount, href: "/dashboard/tickets?cs=READY_FOR_PICKUP" },
+    { label: t.quotesAwaiting, value: quotesPending, href: "/dashboard/tickets?cs=WAITING_FOR_APPROVAL" },
     {
       label: t.lowStockParts,
       value: lowStockCount,
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/dashboard/tickets/new"
-          className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500"
+          className="rounded-lg bg-violet-600 px-4 py-2.5 font-display text-xs font-extrabold tracking-[0.08em] text-white shadow-md shadow-violet-600/30 hover:bg-violet-500 hover:shadow-[0_0_18px_rgba(41,182,246,0.45)]"
         >
           {t.newTicket}
         </Link>
@@ -125,7 +126,7 @@ export default async function DashboardPage() {
       {overdueCount > 0 && (
         <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
           <div className="flex items-center gap-3">
-            <span className="text-base">🔴</span>
+            <Icon name="alert" size={20} className="shrink-0 text-red-600" />
             <div>
               <p className="text-sm font-semibold text-red-700">
                 {overdueCount} ticket{overdueCount > 1 ? "s are" : " is"} overdue

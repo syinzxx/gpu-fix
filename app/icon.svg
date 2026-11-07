@@ -1,13 +1,63 @@
-<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="GPU Repair logo">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#8b5cf6" />
-      <stop offset="1" stop-color="#22d3ee" />
+    <clipPath id="disk"><circle cx="200" cy="200" r="124"/></clipPath>
+    <clipPath id="left"><polygon points="0,0 320,0 70,400 0,400"/></clipPath>
+    <clipPath id="right"><polygon points="320,0 400,0 400,400 70,400"/></clipPath>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4FC3F7"/><stop offset=".55" stop-color="#1E88E5"/><stop offset="1" stop-color="#0D47A1"/>
     </linearGradient>
+    <linearGradient id="gear" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1565C0"/><stop offset="1" stop-color="#0B2E6B"/>
+    </linearGradient>
+    <path id="blade" d="M0 -6 C6 -22 18 -28 27 -18 C16 -16 8 -10 3 -2 Z"/>
+    <rect id="tooth" x="181" y="18" width="38" height="34" rx="5"/>
   </defs>
-  <rect width="64" height="64" rx="13" fill="url(#g)" />
-  <path
-    d="M37 8 21 34h11l-5 22 21-27H37z"
-    fill="#fff"
-  />
+  <g fill="url(#gear)">
+    <use href="#tooth"/>
+    <use href="#tooth" transform="rotate(36 200 200)"/>
+    <use href="#tooth" transform="rotate(72 200 200)"/>
+    <use href="#tooth" transform="rotate(108 200 200)"/>
+    <use href="#tooth" transform="rotate(144 200 200)"/>
+    <use href="#tooth" transform="rotate(180 200 200)"/>
+    <use href="#tooth" transform="rotate(216 200 200)"/>
+    <use href="#tooth" transform="rotate(252 200 200)"/>
+    <use href="#tooth" transform="rotate(288 200 200)"/>
+    <use href="#tooth" transform="rotate(324 200 200)"/>
+    <circle cx="200" cy="200" r="152" fill="none" stroke="url(#gear)" stroke-width="24"/>
+  </g>
+  <circle cx="200" cy="200" r="140" fill="#FFFFFF"/>
+  <circle cx="200" cy="200" r="129" fill="none" stroke="#0B2E6B" stroke-width="7"/>
+  <g clip-path="url(#disk)">
+    <g clip-path="url(#left)">
+      <rect width="400" height="400" fill="url(#blue)"/>
+      <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 120 L95 120 L128 150 L168 150"/>
+        <path d="M150 50 V82 L190 120"/>
+        <path d="M60 192 H112 L150 222"/>
+        <path d="M60 252 H100 L122 272"/>
+        <path d="M70 300 H96 L108 312 H130"/>
+      </g>
+      <g fill="#1E88E5" stroke="#FFFFFF" stroke-width="5">
+        <circle cx="168" cy="150" r="9"/><circle cx="190" cy="120" r="9"/>
+        <circle cx="150" cy="222" r="9"/><circle cx="122" cy="272" r="8"/>
+      </g>
+    </g>
+    <g clip-path="url(#right)">
+      <rect width="400" height="400" fill="#FFFFFF"/>
+      <rect x="228" y="152" width="84" height="98" rx="8" fill="#FFFFFF" stroke="#0B2E6B" stroke-width="6"/>
+      <path d="M222 140 V266" stroke="#0B2E6B" stroke-width="6" stroke-linecap="round"/>
+      <rect x="276" y="140" width="22" height="9" rx="2" fill="#1565C0"/>
+      <line x1="242" y1="259" x2="300" y2="259" stroke="#0B2E6B" stroke-width="9" stroke-dasharray="5 3"/>
+      <circle cx="272" cy="200" r="34" fill="#E3F2FD" stroke="#0B2E6B" stroke-width="5"/>
+      <g fill="#1565C0" transform="translate(272 200)">
+        <use href="#blade"/><use href="#blade" transform="rotate(45)"/><use href="#blade" transform="rotate(90)"/>
+        <use href="#blade" transform="rotate(135)"/><use href="#blade" transform="rotate(180)"/>
+        <use href="#blade" transform="rotate(225)"/><use href="#blade" transform="rotate(270)"/>
+        <use href="#blade" transform="rotate(315)"/>
+      </g>
+      <circle cx="272" cy="200" r="9" fill="#0B2E6B"/><circle cx="272" cy="200" r="3" fill="#FFFFFF"/>
+    </g>
+    <path d="M320 0 L70 400" stroke="#0B2E6B" stroke-width="20"/>
+    <path d="M320 0 L70 400" stroke="#FFFFFF" stroke-width="9"/>
+  </g>
 </svg>

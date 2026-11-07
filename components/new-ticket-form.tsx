@@ -364,6 +364,16 @@ export function NewTicketForm({
                   placeholder="Optional"
                 />
               </div>
+              <div>
+                <Label htmlFor="locale">Notification language</Label>
+                <Select id="locale" name="locale" defaultValue="ar">
+                  <option value="ar">العربية (Arabic)</option>
+                  <option value="en">English</option>
+                </Select>
+                <p className="mt-1 text-xs text-slate-400">
+                  Language used for WhatsApp status updates.
+                </p>
+              </div>
             </div>
           )}
         </div>

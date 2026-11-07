@@ -35,14 +35,13 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-16">
+    <main className="gr-dark gr-glow flex flex-1 items-center justify-center px-4 py-16">
       <Card className="w-full max-w-sm overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-violet-500 to-cyan-400" />
+        <div className="h-1 bg-cyan-400 shadow-[0_0_14px_rgba(41,182,246,0.8)]" />
         <div className="p-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 text-lg shadow-md shadow-violet-500/25">
-            ⚡
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold tracking-tight text-slate-900">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" width={56} height={56} className="drop-shadow-[0_0_16px_rgba(41,182,246,0.5)]" />
+          <h1 className="mt-4 font-display text-2xl font-black text-slate-900">
             Welcome back
           </h1>
           <p className="mt-1 text-sm text-slate-500">

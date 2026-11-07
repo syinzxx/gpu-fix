@@ -1,22 +1,152 @@
 @import "tailwindcss";
 
+/* ── GPU Repair brand ─────────────────────────────────────────────
+   Tokens: bg #02060F · navy #0B2E6B · blue #1565C0 · cyan #29B6F6 ·
+   mist #90CAF9 · light #F4F8FD. The app's existing Tailwind palettes
+   are remapped onto these so every page picks up the brand:
+   violet → brand blue/cyan (accent), slate → navy-tinted neutrals.
+   Status colours (emerald/amber/rose/red) stay semantic. */
 @theme inline {
-  --font-display: var(--font-bricolage);
-  --font-sans: var(--font-manrope);
-  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-orbitron), var(--font-cairo), sans-serif;
+  --font-sans: var(--font-rajdhani), var(--font-cairo), system-ui, sans-serif;
+  --font-mono: var(--font-share-tech), ui-monospace, monospace;
+}
+
+@theme {
+  --color-violet-50: #e8f2fc;
+  --color-violet-100: #d1e6fa;
+  --color-violet-200: #a9d3f5;
+  --color-violet-300: #81d4fa;
+  --color-violet-400: #29b6f6;
+  --color-violet-500: #1e88e5;
+  --color-violet-600: #1565c0;
+  --color-violet-700: #0f4fa0;
+  --color-violet-800: #0b3d80;
+  --color-violet-900: #0b2e6b;
+  --color-violet-950: #071d45;
+
+  --color-cyan-200: #b3e5fc;
+  --color-cyan-300: #81d4fa;
+  --color-cyan-400: #29b6f6;
+  --color-cyan-500: #039be5;
+
+  --color-slate-50: #f4f8fd;
+  --color-slate-100: #e7eff9;
+  --color-slate-200: #d2dfef;
+  --color-slate-300: #b1c4de;
+  --color-slate-400: #5f7398;
+  --color-slate-500: #4a6089;
+  --color-slate-600: #3a5079;
+  --color-slate-700: #283f68;
+  --color-slate-800: #16305a;
+  --color-slate-900: #0b2e6b;
+  --color-slate-950: #071a3f;
+}
+
+html {
+  /* Rajdhani sets small; nudge the base so body copy stays readable. */
+  font-size: 106.25%;
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: #f4f8fd;
+  color: #0b2e6b;
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+/* Orbitron headings: caps + open tracking. Arabic falls back to Cairo,
+   which has no case and needs no extra tracking. */
+.font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+[dir="rtl"] .font-display {
+  letter-spacing: 0;
+}
+
+/* Dark-native brand surface (public homepage, header, footer): those pages
+   were designed dark, so slate keeps its light-on-dark meaning, retinted
+   to the brand's mist blues. */
+.gr-night {
+  background-color: #02060f;
+  color: #ffffff;
+  --color-slate-200: #dce8f7;
+  --color-slate-300: #c5d8f0;
+  --color-slate-400: #90caf9;
+  --color-slate-500: #7d9bc6;
+  --color-slate-600: #3a5a8c;
+}
+
+/* Inverted dark surface. Used for the tracking page, login and
+   the dashboard sidebar: the light palette inverts so existing classes
+   (bg-white cards, slate text, pale status tints) read correctly on navy. */
+.gr-dark {
+  background-color: #02060f;
+  color: #ffffff;
+  --color-slate-50: #0a1a38;
+  --color-slate-100: #10264d;
+  --color-slate-200: #1f3a66;
+  --color-slate-300: #3a5a8c;
+  --color-slate-400: #90caf9;
+  --color-slate-500: #a9c4e6;
+  --color-slate-600: #c5d8f0;
+  --color-slate-700: #dce8f7;
+  --color-slate-800: #eef4fb;
+  --color-slate-900: #ffffff;
+  --color-violet-50: #0e2f55;
+  --color-violet-100: #12396a;
+  --color-violet-700: #29b6f6;
+  --color-emerald-50: #0b2b2a;
+  --color-emerald-100: #134a42;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-amber-50: #2b230d;
+  --color-amber-100: #4d3d12;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-rose-50: #2e1220;
+  --color-rose-100: #4f1b31;
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fda4af;
+}
+.gr-dark .bg-white {
+  background-color: rgba(11, 46, 107, 0.45);
+}
+.gr-dark .ring-slate-900\/5 {
+  --tw-ring-color: rgba(41, 182, 246, 0.25);
+}
+
+/* Soft blue depth glow behind a focal point. */
+.gr-glow {
+  background-image: radial-gradient(circle at 50% 30%, rgba(21, 101, 192, 0.32), rgba(2, 6, 15, 0) 60%);
+}
+
+/* Subtle CRT scanlines overlay. */
+.gr-scanlines {
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.45) 0 2px, transparent 2px 4px);
+  opacity: 0.18;
+}
+
+/* Low-contrast circuit traces with slow current pulses. */
+.gr-trace-pulse {
+  stroke-dasharray: 0.05 1.5;
+  animation: gr-flow var(--p, 8s) linear var(--d, 0s) infinite;
+}
+@keyframes gr-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -1.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gr-trace-pulse { animation: none; }
 }
 
 /* Small eyebrow / section label */
 .silk-label {
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
 }
 
@@ -24,10 +154,10 @@ body {
 @keyframes step-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(124, 92, 252, 0.4);
+    box-shadow: 0 0 0 0 rgba(41, 182, 246, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(124, 92, 252, 0);
+    box-shadow: 0 0 0 7px rgba(41, 182, 246, 0);
   }
 }
 .pulse-live {
@@ -42,6 +172,25 @@ body {
 @media print {
   body {
     background: #ffffff;
+  }
+  /* Dark surfaces print as light paper. */
+  .gr-dark,
+  .gr-night {
+    background: #ffffff;
+    color: #0b2e6b;
+    --color-slate-50: #f4f8fd;
+    --color-slate-100: #e7eff9;
+    --color-slate-200: #d2dfef;
+    --color-slate-300: #b1c4de;
+    --color-slate-400: #5f7398;
+    --color-slate-500: #4a6089;
+    --color-slate-600: #3a5079;
+    --color-slate-700: #283f68;
+    --color-slate-800: #16305a;
+    --color-slate-900: #0b2e6b;
+  }
+  .gr-dark .bg-white {
+    background-color: #ffffff;
   }
 }
 

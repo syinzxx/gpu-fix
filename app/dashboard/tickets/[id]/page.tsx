@@ -32,6 +32,15 @@ import { Button, Input, Label, Select, Textarea, Card, CardHeader, Table, Th, Td
 import { StaffStatusBadge, CustomerStatusBadge, PriorityBadge } from "@/components/status-badge";
 import { fmtDate, fmtDateTime, money, paymentsTotal, cn } from "@/lib/utils";
 import { getLocale, getT } from "@/lib/locale";
+import { Icon } from "@/components/icons";
+
+const WA_STATUS_COLORS: Record<string, string> = {
+  SENT:      "bg-emerald-100 text-emerald-700",
+  DELIVERED: "bg-sky-100 text-sky-700",
+  READ:      "bg-violet-100 text-violet-700",
+  SKIPPED:   "bg-amber-100 text-amber-700",
+  FAILED:    "bg-rose-100 text-rose-700",
+};
 
 export default async function TicketDetailPage({
   params,
@@ -145,21 +154,21 @@ export default async function TicketDetailPage({
         <div className="flex items-center gap-2">
           <Link
             href={`/dashboard/tickets/${ticket.id}/label`}
-            className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
+            className="rounded-lg bg-white px-3 py-2.5 font-display text-[11px] font-extrabold tracking-[0.08em] text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
           >
             {t.printLabel}
           </Link>
           <Link
             href={`/track/${ticket.code}`}
             target="_blank"
-            className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
+            className="rounded-lg bg-white px-3 py-2.5 font-display text-[11px] font-extrabold tracking-[0.08em] text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
           >
             {t.customerView}
           </Link>
           {ticket.invoice && (
             <Link
               href={`/dashboard/invoices/${ticket.invoice.id}`}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
+              className="rounded-lg bg-white px-3 py-2.5 font-display text-[11px] font-extrabold tracking-[0.08em] text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
             >
               {t.invoice} {ticket.invoice.number}
             </Link>
@@ -269,7 +278,7 @@ export default async function TicketDetailPage({
                     </div>
                     <form action={toggleChecklistItem}>
                       <input type="hidden" name="id" value={item.id} />
-                      <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
+                      <Button type="submit" size="sm" variant={item.checked ? "ghost" : "secondary"}>
                         {item.checked ? t.checkedLabel : t.markDone}
                       </Button>
                     </form>
@@ -305,7 +314,7 @@ export default async function TicketDetailPage({
                     </div>
                     <form action={toggleChecklistItem}>
                       <input type="hidden" name="id" value={item.id} />
-                      <Button type="submit" size="sm" variant={item.checked ? "secondary" : "primary"}>
+                      <Button type="submit" size="sm" variant={item.checked ? "ghost" : "secondary"}>
                         {item.checked ? t.checkedLabel : t.markDone}
                       </Button>
                     </form>
@@ -525,8 +534,11 @@ export default async function TicketDetailPage({
             <ul className="divide-y divide-slate-100 p-2">
               {ticket.events.map((e) => (
                 <li key={e.id} className="flex gap-3 px-3 py-3">
-                  <span className="mt-0.5 text-sm">
-                    {e.type === "NOTE" ? "📝" : e.type === "ASSIGNMENT" ? "👤" : e.type === "PAYMENT" ? "💰" : "🔄"}
+                  <span className="mt-0.5 text-violet-600">
+                    <Icon
+                      size={16}
+                      name={e.type === "NOTE" ? "note" : e.type === "ASSIGNMENT" ? "user" : e.type === "PAYMENT" ? "money" : "refresh"}
+                    />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-900">
@@ -664,27 +676,21 @@ export default async function TicketDetailPage({
             </div>
           </Card>
 
-          {ticket.whatsappLogs.length > 0 && (
-            <Card>
-              <CardHeader title={t.whatsappCard} />
-              <form action={resendWhatsapp} className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <input type="hidden" name="ticketId" value={ticket.id} />
-                <p className="text-xs text-slate-400">{t.sendCurrentStatus}</p>
-                <Button type="submit" size="sm" variant="secondary">{t.resend}</Button>
-              </form>
+          <Card>
+            <CardHeader title={t.whatsappCard} />
+            <form action={resendWhatsapp} className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <input type="hidden" name="ticketId" value={ticket.id} />
+              <p className="text-xs text-slate-400">{t.sendCurrentStatus}</p>
+              <Button type="submit" size="sm" variant="secondary">{t.resend}</Button>
+            </form>
+            {ticket.whatsappLogs.length === 0 ? (
+              <p className="p-4 text-xs text-slate-400">{t.noLogsYet}</p>
+            ) : (
               <ul className="divide-y divide-slate-100">
                 {ticket.whatsappLogs.map((w) => (
                   <li key={w.id} className="p-4 text-xs">
                     <div className="flex items-center justify-between">
-                      <Badge
-                        className={
-                          w.status === "SENT"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : w.status === "SKIPPED"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-rose-100 text-rose-700"
-                        }
-                      >
+                      <Badge className={WA_STATUS_COLORS[w.status] ?? "bg-slate-100 text-slate-500"}>
                         {w.status === "SKIPPED" ? t.sendManually : w.status.toLowerCase()}
                       </Badge>
                       <span className="text-slate-400">{fmtDateTime(w.createdAt)}</span>
@@ -693,8 +699,8 @@ export default async function TicketDetailPage({
                   </li>
                 ))}
               </ul>
-            </Card>
-          )}
+            )}
+          </Card>
 
           <p className="text-xs text-slate-400">
             {t.created} {fmtDateTime(ticket.createdAt)} {t.by} {ticket.createdBy.name}

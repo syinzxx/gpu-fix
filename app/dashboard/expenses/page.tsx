@@ -5,6 +5,7 @@ import { addExpense, deleteExpense } from "@/app/actions/expenses";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { Button, Input, Label, Select, Card, CardHeader, Table, Th, Td, Badge, EmptyState } from "@/components/ui";
 import { money, fmtDate, cn } from "@/lib/utils";
+import { getT } from "@/lib/locale";
 
 export default async function ExpensesPage() {
   const session = await auth();
@@ -16,7 +17,7 @@ export default async function ExpensesPage() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfToday = new Date(startOfToday.getTime() + 86400_000);
 
-  const [expenses, paymentsToday, expensesToday] = await Promise.all([
+  const [expenses, paymentsToday, expensesToday, t] = await Promise.all([
     db.expense.findMany({
       include: { createdBy: true },
       orderBy: { date: "desc" },
@@ -30,6 +31,7 @@ export default async function ExpensesPage() {
       where: { date: { gte: startOfToday, lt: endOfToday } },
       select: { amount: true },
     }),
+    getT(),
   ]);
 
   // Net today's payments by method (refunds subtract)
@@ -52,14 +54,14 @@ export default async function ExpensesPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">Expenses</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">{t.expenses}</h1>
 
       {/* Today's cash summary */}
       <Card className="p-5">
-        <p className="silk-label text-slate-400">Today</p>
+        <p className="silk-label text-slate-400">{t.today}</p>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Payments in</p>
+            <p className="text-xs font-semibold text-slate-400">{t.paymentsIn}</p>
             <p className="mt-1 font-display text-2xl font-bold tracking-tight text-emerald-600">{money(totalIn)}</p>
             {byMethod.size > 0 && (
               <p className="mt-1 text-xs text-slate-400">
@@ -68,11 +70,11 @@ export default async function ExpensesPage() {
             )}
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400">Expenses out</p>
+            <p className="text-xs font-semibold text-slate-400">{t.expensesOut}</p>
             <p className="mt-1 font-display text-2xl font-bold tracking-tight text-rose-600">{money(totalOut)}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400">Net</p>
+            <p className="text-xs font-semibold text-slate-400">{t.netThisMonth}</p>
             <p className={cn("mt-1 font-display text-2xl font-bold tracking-tight", net >= 0 ? "text-slate-900" : "text-rose-600")}>
               {money(net)}
             </p>
@@ -84,14 +86,14 @@ export default async function ExpensesPage() {
         {/* Expense list */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title="Expenses" />
+            <CardHeader title={t.expenses} />
             {expenses.length === 0 ? (
-              <EmptyState message="No expenses recorded yet." />
+              <EmptyState message={t.noExpensesYet} />
             ) : (
               <Table>
                 <thead>
                   <tr>
-                    <Th>Date</Th><Th>Category</Th><Th>Amount</Th><Th>Note</Th><Th>Added by</Th><Th></Th>
+                    <Th>{t.date}</Th><Th>{t.category}</Th><Th>{t.amount}</Th><Th>{t.note}</Th><Th>{t.addedBy}</Th><Th></Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -106,7 +108,7 @@ export default async function ExpensesPage() {
                         {session.user.role === "ADMIN" && (
                           <form action={deleteExpense}>
                             <input type="hidden" name="id" value={e.id} />
-                            <Button size="sm" variant="ghost" type="submit" title="Delete">✕</Button>
+                            <Button size="sm" variant="ghost" type="submit" title={t.delete}>✕</Button>
                           </form>
                         )}
                       </Td>
@@ -120,14 +122,14 @@ export default async function ExpensesPage() {
 
         {/* Add expense */}
         <Card className="h-fit">
-          <CardHeader title="Add expense" />
+          <CardHeader title={t.addExpense} />
           <form action={addExpense} className="space-y-3 p-5">
             <div>
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">{t.amount} *</Label>
               <Input id="amount" name="amount" type="number" step="0.01" min="0.01" required />
             </div>
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t.category}</Label>
               <Select id="category" name="category" defaultValue="OTHER">
                 {EXPENSE_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -135,14 +137,14 @@ export default async function ExpensesPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t.date}</Label>
               <Input id="date" name="date" type="date" defaultValue={todayStr} />
             </div>
             <div>
-              <Label htmlFor="note">Note</Label>
-              <Input id="note" name="note" placeholder="Optional" />
+              <Label htmlFor="note">{t.note}</Label>
+              <Input id="note" name="note" placeholder={t.optional} />
             </div>
-            <Button type="submit" className="w-full">Add expense</Button>
+            <Button type="submit" className="w-full">{t.addExpense}</Button>
           </form>
         </Card>
       </div>

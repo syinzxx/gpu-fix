@@ -23,12 +23,12 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-all cursor-pointer",
+        "inline-flex items-center justify-center gap-1.5 rounded-lg font-display font-extrabold tracking-[0.08em] transition-all cursor-pointer",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500",
         "disabled:opacity-50 disabled:cursor-not-allowed",
-        size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2 text-sm",
+        size === "sm" ? "px-2.5 py-1.5 text-[10.5px]" : "px-4 py-2.5 text-xs",
         variant === "primary" &&
-          "bg-violet-600 text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500",
+          "bg-violet-600 text-white shadow-md shadow-violet-600/30 hover:bg-violet-500 hover:shadow-[0_0_18px_rgba(41,182,246,0.45)]",
         variant === "secondary" &&
           "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300",
         variant === "danger" &&
@@ -44,6 +44,7 @@ export function Button({
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
+      suppressHydrationWarning
       className={cn(
         "w-full rounded-lg bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 placeholder:text-slate-400",
         "focus:outline-none focus:ring-2 focus:ring-violet-500",
@@ -70,6 +71,7 @@ export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectE
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
+      suppressHydrationWarning
       className={cn(
         "w-full rounded-lg bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 placeholder:text-slate-400",
         "focus:outline-none focus:ring-2 focus:ring-violet-500",
@@ -83,7 +85,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn("mb-1.5 block text-xs font-semibold text-slate-600", className)}
+      className={cn("mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-slate-600", className)}
       {...props}
     />
   );
@@ -104,7 +106,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 export function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-      <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+      <h2 className="font-display text-xs font-extrabold text-slate-900">{title}</h2>
       {action}
     </div>
   );
@@ -134,7 +136,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   return (
     <th
       className={cn(
-        "border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-400",
+        "border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400",
         className
       )}
       {...props}

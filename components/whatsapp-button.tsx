@@ -2,13 +2,11 @@ import { resolveWhatsappNumber, waMeLink } from "@/lib/phone";
 import { getSettings } from "@/lib/settings";
 import { getT } from "@/lib/locale";
 
-// Floating WhatsApp chat button. Uses SHOP_WHATSAPP if set (in case the chat
-// number differs from the shop's voice line), otherwise SHOP_PHONE, otherwise
-// falls back to the shop's saved phone number in settings. Renders nothing
-// when no number is configured.
+// Floating WhatsApp chat button. Renders nothing when no number is
+// configured — see resolveWhatsappNumber for the resolution chain.
 export default async function WhatsAppButton() {
   const [t, settings] = await Promise.all([getT(), getSettings()]);
-  const raw = resolveWhatsappNumber(settings.shopPhone);
+  const raw = resolveWhatsappNumber(settings);
   if (!raw) return null;
 
   return (

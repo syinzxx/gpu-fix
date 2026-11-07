@@ -14,6 +14,7 @@ import { approveQuote, rejectQuote, submitRating } from "@/app/actions/track";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { RatingStars } from "@/components/rating-stars";
 import { Button, Textarea } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 export async function generateMetadata({
   params,
@@ -65,14 +66,14 @@ export default async function TrackPage({
 
   if (!ticket) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+      <main className="gr-dark flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <div className="absolute end-4 top-4">
           <LangToggle current={locale} />
         </div>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
-          🔍
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-cyan-400 ring-1 ring-cyan-400/40">
+          <Icon name="search" size={26} />
         </div>
-        <h1 className="mt-5 font-display text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="mt-5 font-display text-3xl font-black text-slate-900">
           {t.ticketNotFound}
         </h1>
         <p className="mt-2 max-w-xs text-sm text-slate-500">
@@ -81,7 +82,7 @@ export default async function TrackPage({
         </p>
         <Link
           href="/"
-          className="mt-8 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500"
+          className="mt-8 rounded-lg bg-violet-600 px-5 py-2.5 font-display text-xs font-extrabold tracking-[0.08em] text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500"
         >
           {t.tryAnother}
         </Link>
@@ -111,6 +112,7 @@ export default async function TrackPage({
   );
 
   return (
+    <div className="gr-dark flex flex-1 flex-col">
     <main className="mx-auto w-full max-w-lg flex-1 px-4 py-10">
       {/* Language toggle */}
       <div className="mb-4 flex justify-end">
@@ -119,7 +121,7 @@ export default async function TrackPage({
 
       {/* Ticket header */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm shadow-slate-900/4 ring-1 ring-slate-900/5">
-        <div className="h-1.5 bg-gradient-to-r from-violet-500 to-cyan-400" />
+        <div className="h-1 bg-cyan-400 shadow-[0_0_14px_rgba(41,182,246,0.8)]" />
         <div className="px-6 py-6 text-center">
           <p className="text-xs font-semibold text-slate-400">
             {settings.shopName} · {t.repairTracking}
@@ -146,13 +148,13 @@ export default async function TrackPage({
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-xs font-semibold text-slate-400">{t.queuePosition}</p>
-            <p className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-900">
+            <p className="mt-1 font-display text-3xl font-black text-slate-900">
               {queuePosition ? `#${queuePosition}` : "—"}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-xs font-semibold text-slate-400">{t.estCompletion}</p>
-            <p className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-900">
+            <p className="mt-1 font-display text-3xl font-black text-slate-900">
               {ticket.etaDate ? fmtDate(ticket.etaDate) : "—"}
             </p>
           </div>
@@ -161,7 +163,7 @@ export default async function TrackPage({
         {customerStatus === "WAITING_FOR_APPROVAL" && ticket.quoteAmount != null && (
           <div className="mt-4 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100">
             <p className="text-xs font-bold text-amber-700">{t.repairQuote}</p>
-            <p className="mt-1 font-display text-3xl font-bold tracking-tight text-amber-800">
+            <p className="mt-1 font-display text-3xl font-black text-amber-800">
               {money(ticket.quoteAmount)}
             </p>
             <p className="mt-1.5 text-xs text-amber-700/80">{t.quoteApproval}</p>
@@ -363,5 +365,6 @@ export default async function TrackPage({
         {t.weHelpYou}
       </p>
     </main>
+    </div>
   );
 }

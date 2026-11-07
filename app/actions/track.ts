@@ -30,7 +30,7 @@ export async function approveQuote(formData: FormData) {
 
   const ticket = await db.ticket.findUnique({
     where: { code },
-    include: { customer: { select: { name: true, whatsapp: true } } },
+    include: { customer: { select: { name: true, whatsapp: true, locale: true } } },
   });
   if (!ticket || ticket.customerStatus !== "WAITING_FOR_APPROVAL") return;
 
@@ -60,6 +60,7 @@ export async function approveQuote(formData: FormData) {
     status: "WAITING_FOR_PARTS",
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
+    locale: ticket.customer.locale,
   });
 
   revalidatePath(`/track/${ticket.code}`);
@@ -73,7 +74,7 @@ export async function rejectQuote(formData: FormData) {
 
   const ticket = await db.ticket.findUnique({
     where: { code },
-    include: { customer: { select: { name: true, whatsapp: true } } },
+    include: { customer: { select: { name: true, whatsapp: true, locale: true } } },
   });
   if (!ticket || ticket.customerStatus !== "WAITING_FOR_APPROVAL") return;
 
@@ -103,6 +104,7 @@ export async function rejectQuote(formData: FormData) {
     status: "DIAGNOSING",
     device: `${ticket.brand} ${ticket.model}`,
     quoteAmount: ticket.quoteAmount,
+    locale: ticket.customer.locale,
   });
 
   revalidatePath(`/track/${ticket.code}`);

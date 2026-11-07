@@ -152,6 +152,7 @@ export function customerStatusLabelsFor(locale: string): Record<CustomerStatus, 
   return locale === "ar" ? CUSTOMER_STATUS_LABELS_AR : CUSTOMER_STATUS_LABELS;
 }
 
+/** Free-text WhatsApp body (24h-window fallback), localized per customer. */
 export function customerStatusMessage(opts: {
   customerName: string;
   code: string;
@@ -159,40 +160,75 @@ export function customerStatusMessage(opts: {
   device: string;
   quoteAmount?: number | null;
   eta?: string | null;
+  locale?: string;
 }): string {
+  const ar = opts.locale === "ar";
   const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${opts.code}`;
-  const shop = process.env.SHOP_NAME ?? "our shop";
-  const lines: Record<CustomerStatus, string> = {
+  const q = opts.quoteAmount ?? "-";
+
+  const linesEn: Record<CustomerStatus, string> = {
     RECEIVED:             `We received your ${opts.device}. Track it anytime: ${trackUrl}`,
     DIAGNOSING:           `Your ${opts.device} is now being diagnosed.`,
     WAITING_FOR_PARTS:    `Parts have been ordered for your ${opts.device}. We'll update you when they arrive.`,
     IN_REPAIR:            `Your ${opts.device} is now being repaired.`,
     TESTING:              `Your ${opts.device} is in final testing.${opts.eta ? ` Expected completion: ${opts.eta}.` : ""}`,
-    WAITING_FOR_APPROVAL: `Diagnosis complete. Repair quote: ${opts.quoteAmount ?? "-"}. Please approve or contact us. Track at ${trackUrl}`,
+    WAITING_FOR_APPROVAL: `Diagnosis complete. Repair quote: ${q}. Please approve or contact us. Track at ${trackUrl}`,
     READY_FOR_PICKUP:     `Your ${opts.device} is ready for pickup! See the summary at ${trackUrl}`,
-    CLOSED:               `Ticket ${opts.code} is closed. Thank you for choosing ${shop}! Rate your experience: ${trackUrl}`,
+    CLOSED:               `Ticket ${opts.code} is closed. Thank you for choosing ${process.env.SHOP_NAME ?? "our shop"}! Rate your experience: ${trackUrl}`,
     CANCELLED:            `Ticket ${opts.code} has been cancelled. Contact us if you have questions.`,
   };
-  return `Hi ${opts.customerName}, ticket ${opts.code}: ${lines[opts.status]}`;
+  const linesAr: Record<CustomerStatus, string> = {
+    RECEIVED:             `استلمنا ${opts.device}. تابع حالته في أي وقت: ${trackUrl}`,
+    DIAGNOSING:           `يجري الآن تشخيص ${opts.device}.`,
+    WAITING_FOR_PARTS:    `تم طلب القطع اللازمة لـ ${opts.device}. سنبلغك فور وصولها.`,
+    IN_REPAIR:            `${opts.device} قيد الإصلاح الآن.`,
+    TESTING:              `${opts.device} في مرحلة الاختبار النهائي.${opts.eta ? ` الموعد المتوقع للانتهاء: ${opts.eta}.` : ""}`,
+    WAITING_FOR_APPROVAL: `اكتمل التشخيص. عرض سعر الإصلاح: ${q}. يرجى الموافقة أو التواصل معنا. تابع عبر ${trackUrl}`,
+    READY_FOR_PICKUP:     `${opts.device} جاهز للاستلام! اطّلع على الملخص عبر ${trackUrl}`,
+    CLOSED:               `تم إغلاق التذكرة ${opts.code}. شكراً لاختيارك ${process.env.SHOP_NAME ?? "متجرنا"}! قيّم تجربتك: ${trackUrl}`,
+    CANCELLED:            `تم إلغاء التذكرة ${opts.code}. تواصل معنا إذا كان لديك أي استفسار.`,
+  };
+
+  const lines = ar ? linesAr : linesEn;
+  const prefix = ar
+    ? `مرحباً ${opts.customerName}، تذكرة ${opts.code}: `
+    : `Hi ${opts.customerName}, ticket ${opts.code}: `;
+  return `${prefix}${lines[opts.status]}`;
 }
 
+/** Template `statusLine` variable (no code/url), localized per customer. */
 export function buildCustomerStatusLine(opts: {
   status: CustomerStatus;
   device: string;
   quoteAmount?: number | null;
   eta?: string | null;
+  locale?: string;
 }): string {
   const { status, device, quoteAmount, eta } = opts;
-  const lines: Record<CustomerStatus, string> = {
+  const q = quoteAmount ?? "-";
+
+  const linesEn: Record<CustomerStatus, string> = {
     RECEIVED:             `We received your ${device}`,
     DIAGNOSING:           `Your ${device} is now being diagnosed`,
     WAITING_FOR_PARTS:    `Parts ordered for your ${device}`,
     IN_REPAIR:            `Your ${device} is now being repaired`,
     TESTING:              `Your ${device} is in final testing${eta ? `. ETA: ${eta}` : ""}`,
-    WAITING_FOR_APPROVAL: `Diagnosis complete. Repair quote: ${quoteAmount ?? "-"}`,
+    WAITING_FOR_APPROVAL: `Diagnosis complete. Repair quote: ${q}`,
     READY_FOR_PICKUP:     `Your ${device} is ready for pickup!`,
     CLOSED:               `Ticket closed. Thank you for choosing us! Please rate your experience`,
     CANCELLED:            `Ticket cancelled`,
   };
-  return lines[status];
+  const linesAr: Record<CustomerStatus, string> = {
+    RECEIVED:             `استلمنا ${device}`,
+    DIAGNOSING:           `يجري الآن تشخيص ${device}`,
+    WAITING_FOR_PARTS:    `تم طلب القطع لـ ${device}`,
+    IN_REPAIR:            `${device} قيد الإصلاح الآن`,
+    TESTING:              `${device} في الاختبار النهائي${eta ? `. الموعد المتوقع: ${eta}` : ""}`,
+    WAITING_FOR_APPROVAL: `اكتمل التشخيص. عرض السعر: ${q}`,
+    READY_FOR_PICKUP:     `${device} جاهز للاستلام!`,
+    CLOSED:               `تم إغلاق التذكرة. شكراً لاختيارك متجرنا! يرجى تقييم تجربتك`,
+    CANCELLED:            `تم إلغاء التذكرة`,
+  };
+
+  return (opts.locale === "ar" ? linesAr : linesEn)[status];
 }

@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Manrope, JetBrains_Mono } from "next/font/google";
+import { Orbitron, Rajdhani, Share_Tech_Mono, Cairo } from "next/font/google";
 import "./globals.css";
 import { getLocale } from "@/lib/locale";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+// Brand type: Orbitron (display), Rajdhani (body), Share Tech Mono (codes/readouts).
+// Cairo is the glyph fallback for Arabic, which the brand fonts don't cover.
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
   subsets: ["latin"],
 });
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const rajdhani = Rajdhani({
+  variable: "--font-rajdhani",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jetbrains",
+const shareTechMono = Share_Tech_Mono({
+  variable: "--font-share-tech",
   subsets: ["latin"],
+  weight: "400",
+});
+
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic"],
 });
 
 const shopName = process.env.SHOP_NAME ?? "GPU Fix Shop";
@@ -44,9 +53,9 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={locale === "ar" ? "rtl" : "ltr"}
-      className={`${bricolage.variable} ${manrope.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${orbitron.variable} ${rajdhani.variable} ${shareTechMono.variable} ${cairo.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

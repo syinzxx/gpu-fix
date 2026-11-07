@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { TicketSlideOver, type SlideOverTicket, type Technician } from "@/components/ticket-slide-over";
 import { StaffStatusBadge, PriorityBadge } from "@/components/status-badge";
@@ -29,15 +29,13 @@ export function TicketsClient({
     unassigned: string;
   };
 }) {
-  const [selected, setSelected] = useState<SlideOverTicket | null>(null);
-  const close = useCallback(() => setSelected(null), []);
-
-  // Keep selected ticket in sync with refreshed data after mutations
-  useEffect(() => {
-    if (!selected) return;
-    const updated = tickets.find((t) => t.id === selected.id);
-    if (updated) setSelected(updated);
-  }, [tickets]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Track the selection by id and derive the live ticket from props during
+  // render. This keeps the slide-over in sync with refreshed data after a
+  // mutation without a setState-in-effect (if the ticket leaves the list, the
+  // selection clears and the slide-over closes).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? tickets.find((t) => t.id === selectedId) ?? null : null;
+  const close = useCallback(() => setSelectedId(null), []);
 
   return (
     <>
@@ -69,13 +67,13 @@ export function TicketsClient({
               return (
                 <tr
                   key={ticket.id}
-                  onClick={() => setSelected(ticket)}
+                  onClick={() => setSelectedId(ticket.id)}
                   tabIndex={0}
                   role="button"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelected(ticket);
+                      setSelectedId(ticket.id);
                     }
                   }}
                   className={cn(

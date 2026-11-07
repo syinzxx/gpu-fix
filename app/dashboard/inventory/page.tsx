@@ -19,6 +19,7 @@ import { money, cn } from "@/lib/utils";
 import { getT } from "@/lib/locale";
 import { OrdersTabClient } from "@/components/orders-tab-client";
 import type { PurchaseOrderData } from "@/components/orders-tab-client";
+import { Icon } from "@/components/icons";
 
 const TABS = [
   { key: "parts", label: "Parts" },
@@ -93,7 +94,7 @@ export default async function InventoryPage({
         {tab === "parts" && (
           <Link
             href="/dashboard/inventory/new"
-            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500"
+            className="rounded-lg bg-violet-600 px-4 py-2.5 font-display text-xs font-extrabold tracking-[0.08em] text-white shadow-md shadow-violet-600/30 hover:bg-violet-500 hover:shadow-[0_0_18px_rgba(41,182,246,0.45)]"
           >
             {t.newPart}
           </Link>
@@ -272,8 +273,9 @@ export default async function InventoryPage({
                             href={`/dashboard/inventory/${p.id}/label`}
                             className="text-slate-400 hover:text-violet-700"
                             title={t.printLabel}
+                            aria-label={t.printLabel}
                           >
-                            🏷️
+                            <Icon name="tag" size={18} />
                           </Link>
                         </Td>
                       </tr>

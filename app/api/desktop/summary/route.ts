@@ -1,4 +1,3 @@
-import { type NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -12,7 +11,7 @@ export const dynamic = "force-dynamic";
  *
  * Returns 401 if there is no valid session.
  */
-export async function GET(_request: NextRequest): Promise<Response> {
+export async function GET(): Promise<Response> {
   const session = await auth();
   if (!session?.user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

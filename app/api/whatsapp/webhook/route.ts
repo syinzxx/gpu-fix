@@ -1,5 +1,7 @@
 import { type NextRequest } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
+import { CUSTOMER_STATUS_LABELS, type CustomerStatus } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +38,21 @@ export async function GET(request: NextRequest): Promise<Response> {
  */
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    const body = await request.json();
+    // Read the raw body so we can verify Meta's HMAC signature over the exact
+    // bytes they signed (JSON.parse would lose that fidelity).
+    const raw = await request.text();
+
+    // When an app secret is configured, reject any request whose
+    // X-Hub-Signature-256 doesn't match — this is the only thing stopping a
+    // stranger from spoofing delivery receipts or triggering outbound replies.
+    // If the secret is unset we accept the request, matching the app's
+    // "degrade gracefully without credentials" behaviour elsewhere.
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (appSecret && !isValidSignature(raw, request.headers.get("x-hub-signature-256"), appSecret)) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    const body = JSON.parse(raw) as MetaWebhookBody;
     // Await so a PM2 graceful shutdown / serverless freeze can't kill the
     // work after the response is sent. processWebhook swallows its own
     // internal errors, so the 200 below is still guaranteed.
@@ -46,6 +62,24 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   return new Response("OK", { status: 200 });
+}
+
+/**
+ * Verifies Meta's X-Hub-Signature-256 header: HMAC-SHA256 of the raw request
+ * body keyed with the app secret, hex-encoded and prefixed with "sha256=".
+ * Uses a constant-time compare to avoid leaking the signature via timing.
+ */
+function isValidSignature(
+  rawBody: string,
+  header: string | null,
+  appSecret: string
+): boolean {
+  if (!header) return false;
+  const expected =
+    "sha256=" + createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex");
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,12 +170,16 @@ async function handleInbound(message: MetaMessage): Promise<void> {
   const code = match[0].toUpperCase();
 
   try {
-    const ticket = await db.ticket.findUnique({ where: { code } });
+    const ticket = await db.ticket.findUnique({
+      where: { code },
+      include: { customer: { select: { name: true } } },
+    });
     if (!ticket) return;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
     const trackUrl = `${appUrl}/track/${code}`;
-    const replyBody = `Track your repair: ${trackUrl}`;
+    const statusLabel = CUSTOMER_STATUS_LABELS[ticket.customerStatus as CustomerStatus] ?? ticket.customerStatus;
+    const replyBody = `Hi ${ticket.customer.name}, your repair (${code}) is currently: ${statusLabel}.\n\nTrack anytime: ${trackUrl}`;
 
     await sendReply(ticket.id, message.from, replyBody);
   } catch {

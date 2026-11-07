@@ -12,5 +12,10 @@ export const getSettings = cache(async function getSettings() {
     shopAddress: s.shopAddress || process.env.SHOP_ADDRESS || "",
     shopPhone: s.shopPhone || process.env.SHOP_PHONE || "",
     shopHours: s.shopHours || process.env.SHOP_HOURS || "",
+    whatsappNumber: s.whatsappNumber || process.env.SHOP_WHATSAPP || "",
+    socialFacebook: s.socialFacebook || process.env.SOCIAL_FACEBOOK_URL || "",
+    socialYoutube: s.socialYoutube || process.env.SOCIAL_YOUTUBE_URL || "",
+    socialTiktok: s.socialTiktok || process.env.SOCIAL_TIKTOK_URL || "",
+    socialDiscord: s.socialDiscord || process.env.SOCIAL_DISCORD_URL || "",
   };
 });

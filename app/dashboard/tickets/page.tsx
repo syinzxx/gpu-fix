@@ -3,23 +3,35 @@ import { db } from "@/lib/db";
 import { Card } from "@/components/ui";
 import { etaUrgency, cn } from "@/lib/utils";
 import { TicketsClient } from "@/components/tickets-client";
-import { getT } from "@/lib/locale";
+import { getT, getLocale } from "@/lib/locale";
+import {
+  CUSTOMER_STATUSES,
+  customerStatusLabelsFor,
+  type CustomerStatus,
+} from "@/lib/constants";
 
 export default async function TicketsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; cs?: string }>;
 }) {
-  const { status, q } = await searchParams;
+  const { status, q, cs } = await searchParams;
 
-  const showAll = status === "ALL";
-  const showOpen = !status || status === "OPEN";
-  const showPending = status === "PENDING";
-  const showClosed = status === "CLOSED";
+  // Optional exact customer-status filter (used by the dashboard stat cards).
+  // When present it takes precedence over the staff-status pills so the list
+  // matches the count the card showed.
+  const customerStatusFilter =
+    cs && CUSTOMER_STATUSES.includes(cs as CustomerStatus) ? (cs as CustomerStatus) : null;
 
-  const [tickets, technicians, t] = await Promise.all([
+  const showAll = !customerStatusFilter && status === "ALL";
+  const showOpen = !customerStatusFilter && (!status || status === "OPEN");
+  const showPending = !customerStatusFilter && status === "PENDING";
+  const showClosed = !customerStatusFilter && status === "CLOSED";
+
+  const [tickets, technicians, t, locale] = await Promise.all([
     db.ticket.findMany({
       where: {
+        ...(customerStatusFilter ? { customerStatus: customerStatusFilter } : {}),
         ...(showPending ? { staffStatus: "PENDING" } : {}),
         ...(showClosed ? { staffStatus: "CLOSED" } : {}),
         ...(showOpen ? { staffStatus: "OPEN" } : {}),
@@ -48,6 +60,7 @@ export default async function TicketsPage({
       orderBy: { name: "asc" },
     }),
     getT(),
+    getLocale(),
   ]);
 
   // Sort in-memory: priority → ETA urgency → received asc
@@ -83,7 +96,7 @@ export default async function TicketsPage({
         </h1>
         <Link
           href="/dashboard/tickets/new"
-          className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-600/25 hover:bg-violet-500"
+          className="rounded-lg bg-violet-600 px-4 py-2.5 font-display text-xs font-extrabold tracking-[0.08em] text-white shadow-md shadow-violet-600/30 hover:bg-violet-500 hover:shadow-[0_0_18px_rgba(41,182,246,0.45)]"
         >
           {t.newTicket}
         </Link>
@@ -135,6 +148,17 @@ export default async function TicketsPage({
         >
           All
         </Link>
+
+        {/* Exact customer-status filter (from a dashboard stat card) */}
+        {customerStatusFilter && (
+          <Link
+            href="/dashboard/tickets"
+            className="inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500"
+          >
+            {customerStatusLabelsFor(locale)[customerStatusFilter]}
+            <span aria-hidden>×</span>
+          </Link>
+        )}
       </div>
 
       {/* Search */}
@@ -146,6 +170,7 @@ export default async function TicketsPage({
           className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
         />
         {status && <input type="hidden" name="status" value={status} />}
+        {customerStatusFilter && <input type="hidden" name="cs" value={customerStatusFilter} />}
       </form>
 
       <Card>

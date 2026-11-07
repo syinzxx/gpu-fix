@@ -4,6 +4,7 @@ import { DashboardNav, type NavItem } from "@/components/dashboard-nav";
 import { getSettings } from "@/lib/settings";
 import { getLocale, getT } from "@/lib/locale";
 import { LangToggle } from "@/components/lang-toggle";
+import { BrandMark } from "@/components/icons";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -12,26 +13,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const [settings, t, locale] = await Promise.all([getSettings(), getT(), getLocale()]);
 
   const NAV: (NavItem & { adminOnly?: boolean; roles?: string[] })[] = [
-    { href: "/dashboard", label: t.overview, icon: "◈" },
-    { href: "/dashboard/tickets", label: t.tickets, icon: "▤" },
-    { href: "/dashboard/inventory", label: t.inventory, icon: "▦" },
-    { href: "/dashboard/customers", label: t.customers, icon: "◔" },
-    { href: "/dashboard/reports", label: t.reports, icon: "◫" },
-    { href: "/dashboard/expenses", label: t.expenses, icon: "▧", roles: ["ADMIN", "RECEPTIONIST"] },
-    { href: "/dashboard/users", label: t.staff, icon: "◍", adminOnly: true },
-    { href: "/dashboard/settings", label: t.settings, icon: "⚙", adminOnly: true },
+    { href: "/dashboard", label: t.overview, icon: "overview" },
+    { href: "/dashboard/tickets", label: t.tickets, icon: "ticket" },
+    { href: "/dashboard/inventory", label: t.inventory, icon: "box" },
+    { href: "/dashboard/customers", label: t.customers, icon: "users" },
+    { href: "/dashboard/reports", label: t.reports, icon: "chart" },
+    { href: "/dashboard/expenses", label: t.expenses, icon: "receipt", roles: ["ADMIN", "RECEPTIONIST"] },
+    { href: "/dashboard/users", label: t.staff, icon: "staff", adminOnly: true },
+    { href: "/dashboard/settings", label: t.settings, icon: "settings", adminOnly: true },
+    { href: "/dashboard/whatsapp", label: t.whatsappLogs, icon: "message", roles: ["ADMIN", "RECEPTIONIST"] },
   ];
 
   return (
     <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 start-0 flex w-60 flex-col border-e border-slate-200/70 bg-white print:hidden">
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-cyan-400 text-sm shadow-md shadow-violet-500/25">
-            ⚡
-          </span>
-          <span className="font-display text-[15px] font-bold tracking-tight text-slate-900">
-            {settings.shopName}
-          </span>
+      <aside className="fixed inset-y-0 start-0 flex w-60 flex-col gr-dark border-e border-cyan-400/20 print:hidden">
+        <div className="flex items-center px-5 py-5">
+          <BrandMark name={settings.shopName} size={34} />
         </div>
 
         <DashboardNav
@@ -40,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ).map(({ href, label, icon }) => ({ href, label, icon }))}
         />
 
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-cyan-400/15 p-4">
           <div className="flex items-center justify-between">
             <p className="truncate text-sm font-bold text-slate-900">{user.name}</p>
             <LangToggle current={locale} />

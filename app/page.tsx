@@ -5,6 +5,7 @@ import GpuHero from "@/components/gpu-hero";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import WhatsAppButton from "@/components/whatsapp-button";
+import { Icon } from "@/components/icons";
 import { LocalBusinessJsonLd } from "@/components/local-business-jsonld";
 import { getT } from "@/lib/locale";
 import { getSettings } from "@/lib/settings";
@@ -32,12 +33,12 @@ export default async function Home() {
   const [t, settings] = await Promise.all([getT(), getSettings()]);
 
   const services = [
-    { icon: "🖥️", title: t.svcNoDisplayTitle, desc: t.svcNoDisplayDesc },
-    { icon: "💾", title: t.svcVramTitle, desc: t.svcVramDesc },
-    { icon: "🔩", title: t.svcReballingTitle, desc: t.svcReballingDesc },
-    { icon: "🌀", title: t.svcThermalTitle, desc: t.svcThermalDesc },
-    { icon: "🧩", title: t.svcVbiosTitle, desc: t.svcVbiosDesc },
-    { icon: "💧", title: t.svcWaterTitle, desc: t.svcWaterDesc },
+    { icon: "monitor" as const, title: t.svcNoDisplayTitle, desc: t.svcNoDisplayDesc },
+    { icon: "chip" as const, title: t.svcVramTitle, desc: t.svcVramDesc },
+    { icon: "core" as const, title: t.svcReballingTitle, desc: t.svcReballingDesc },
+    { icon: "fan" as const, title: t.svcThermalTitle, desc: t.svcThermalDesc },
+    { icon: "code" as const, title: t.svcVbiosTitle, desc: t.svcVbiosDesc },
+    { icon: "droplet" as const, title: t.svcWaterTitle, desc: t.svcWaterDesc },
   ];
 
   const steps = [
@@ -50,18 +51,42 @@ export default async function Home() {
   ];
 
   const trustItems = [
-    { icon: "🛡️", title: t.trustWarrantyTitle, desc: t.trustWarrantyDesc },
-    { icon: "🧰", title: t.trustPartsTitle, desc: t.trustPartsDesc },
-    { icon: "💬", title: t.trustUpdatesTitle, desc: t.trustUpdatesDesc },
+    { icon: "shield" as const, title: t.trustWarrantyTitle, desc: t.trustWarrantyDesc },
+    { icon: "wrench" as const, title: t.trustPartsTitle, desc: t.trustPartsDesc },
+    { icon: "chat" as const, title: t.trustUpdatesTitle, desc: t.trustUpdatesDesc },
   ];
 
-  const whatsappNumber = resolveWhatsappNumber(settings.shopPhone);
+  const whatsappNumber = resolveWhatsappNumber(settings);
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0b1120]">
+    <div className="gr-night flex flex-1 flex-col">
       <LocalBusinessJsonLd />
       <SiteHeader />
       <main className="relative flex flex-1 flex-col justify-center overflow-hidden px-4 py-16 lg:px-10">
+        {/* Circuit traces + scanlines (decorative, low contrast) */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[900px] w-full"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMin slice"
+          fill="none"
+        >
+          <g stroke="#1565C0" strokeWidth="2" opacity="0.22" strokeLinejoin="round">
+            <path d="M0 180H240L300 240H520L580 180H760" />
+            <path d="M0 520H160L230 590H420" />
+            <path d="M1440 120H1160L1100 180H900" />
+            <path d="M1440 640H1220L1150 570H960" />
+            <path d="M700 0V110L760 170V260" />
+          </g>
+          <g stroke="#29B6F6" strokeWidth="3" strokeLinecap="round" opacity="0.4">
+            <path className="gr-trace-pulse" pathLength={1} style={{ ["--p" as string]: "7s", ["--d" as string]: "-1s" }} d="M0 180H240L300 240H520L580 180H760" />
+            <path className="gr-trace-pulse" pathLength={1} style={{ ["--p" as string]: "6s", ["--d" as string]: "-3s" }} d="M0 520H160L230 590H420" />
+            <path className="gr-trace-pulse" pathLength={1} style={{ ["--p" as string]: "8s", ["--d" as string]: "-5s" }} d="M1440 120H1160L1100 180H900" />
+            <path className="gr-trace-pulse" pathLength={1} style={{ ["--p" as string]: "9s", ["--d" as string]: "-2s" }} d="M1440 640H1220L1150 570H960" />
+            <path className="gr-trace-pulse" pathLength={1} style={{ ["--p" as string]: "7.5s", ["--d" as string]: "-4s" }} d="M700 0V110L760 170V260" />
+          </g>
+        </svg>
+        <div aria-hidden className="gr-scanlines pointer-events-none absolute inset-0" />
         {/* Ambient glow — light escaping a glass case */}
         <div
           aria-hidden
@@ -74,19 +99,21 @@ export default async function Home() {
 
         <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[2fr_3fr] lg:gap-4">
           <div className="order-2 mx-auto w-full max-w-md text-center lg:order-1 lg:text-start">
-            <div
-              aria-hidden
-              className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-xl shadow-lg shadow-violet-500/30 lg:mx-0"
-            >
-              ⚡
-            </div>
-            <p className="mt-5 text-sm font-semibold text-cyan-300/80">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.svg"
+              alt=""
+              width={72}
+              height={72}
+              className="mx-auto drop-shadow-[0_0_24px_rgba(41,182,246,0.5)] lg:mx-0"
+            />
+            <p className="silk-label mt-5 text-cyan-300">
               {settings.shopName}
             </p>
-            <h1 className="mt-2 font-display text-5xl font-bold tracking-tight text-white">
+            <h1 className="mt-2 font-display text-4xl font-black text-white lg:text-5xl">
               {t.heroTitleLine1}
               <br />
-              <span className="bg-gradient-to-r from-violet-400 to-cyan-300 bg-clip-text text-transparent">
+              <span className="text-cyan-400 [text-shadow:0_0_28px_rgba(41,182,246,0.55)]">
                 {t.heroTitleAccent}
               </span>
             </h1>
@@ -97,7 +124,7 @@ export default async function Home() {
             <form
               id="track"
               action={trackAction}
-              className="mx-auto mt-9 flex max-w-sm gap-2 rounded-2xl bg-white/5 p-2 ring-1 ring-white/10 backdrop-blur lg:mx-0"
+              className="mx-auto mt-9 flex max-w-sm gap-2 rounded-2xl bg-[#0B2E6B]/60 p-2 ring-[1.5px] ring-cyan-400/50 shadow-[0_0_28px_rgba(41,182,246,0.25)] backdrop-blur lg:mx-0"
             >
               <label htmlFor="code" className="sr-only">
                 {t.ticketCodeLabel}
@@ -108,11 +135,11 @@ export default async function Home() {
                 required
                 placeholder={t.ticketCodePlaceholder}
                 autoComplete="off"
-                className="w-full min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.15em] text-white placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="w-full min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.15em] text-white placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 cursor-pointer"
+                className="shrink-0 rounded-xl bg-violet-600 px-5 py-3 font-display text-xs font-extrabold tracking-[0.1em] text-white shadow-lg shadow-violet-600/30 transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 cursor-pointer"
               >
                 {t.trackBtn}
               </button>
@@ -137,8 +164,8 @@ export default async function Home() {
         {/* Services */}
         <section className="relative py-16">
           <div className="mx-auto max-w-6xl px-4 lg:px-10">
-            <p className="silk-label text-cyan-300/80">{t.servicesKicker}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+            <p className="silk-label text-cyan-300">{t.servicesKicker}</p>
+            <h2 className="mt-2 font-display text-3xl font-black text-white">
               {t.servicesTitle}
             </h2>
             <p className="mt-3 max-w-2xl text-slate-300">{t.servicesSubtitle}</p>
@@ -147,18 +174,18 @@ export default async function Home() {
               {services.map((s) => (
                 <div
                   key={s.title}
-                  className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                  className="rounded-2xl bg-[#0B2E6B]/45 p-6 ring-[1.5px] ring-cyan-400/25"
                 >
                   <div
                     aria-hidden
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-400/20 text-xl ring-1 ring-white/10"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0B2E6B] text-cyan-400 ring-1 ring-cyan-400/40"
                   >
-                    {s.icon}
+                    <Icon name={s.icon} size={22} />
                   </div>
-                  <h3 className="mt-4 font-display font-bold tracking-tight text-white">
+                  <h3 className="mt-4 font-display text-sm font-extrabold text-white">
                     {s.title}
                   </h3>
-                  <p className="mt-1.5 text-sm text-slate-300">{s.desc}</p>
+                  <p className="mt-1.5 text-[15px] text-slate-300">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -168,8 +195,8 @@ export default async function Home() {
         {/* How it works */}
         <section className="relative py-16">
           <div className="mx-auto max-w-6xl px-4 lg:px-10">
-            <p className="silk-label text-cyan-300/80">{t.howKicker}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+            <p className="silk-label text-cyan-300">{t.howKicker}</p>
+            <h2 className="mt-2 font-display text-3xl font-black text-white">
               {t.howTitle}
             </h2>
 
@@ -177,14 +204,14 @@ export default async function Home() {
               {steps.map((step) => {
                 const content = (
                   <>
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 font-mono text-sm font-bold text-white">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-600 font-mono text-base text-white ring-2 ring-cyan-400/60">
                       {step.n}
                     </span>
                     <div className="mt-4">
-                      <h3 className="font-display font-bold tracking-tight text-white">
+                      <h3 className="font-display text-sm font-extrabold text-white">
                         {step.title}
                       </h3>
-                      <p className="mt-1.5 text-sm text-slate-300">{step.desc}</p>
+                      <p className="mt-1.5 text-[15px] text-slate-300">{step.desc}</p>
                     </div>
                   </>
                 );
@@ -192,14 +219,14 @@ export default async function Home() {
                   <a
                     key={step.n}
                     href={step.href}
-                    className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+                    className="rounded-2xl bg-[#0B2E6B]/45 p-6 ring-[1.5px] ring-cyan-400/25 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
                   >
                     {content}
                   </a>
                 ) : (
                   <div
                     key={step.n}
-                    className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                    className="rounded-2xl bg-[#0B2E6B]/45 p-6 ring-[1.5px] ring-cyan-400/25"
                   >
                     {content}
                   </div>
@@ -212,8 +239,8 @@ export default async function Home() {
         {/* Trust / warranty */}
         <section className="relative py-16">
           <div className="mx-auto max-w-6xl px-4 lg:px-10">
-            <p className="silk-label text-cyan-300/80">{t.trustKicker}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+            <p className="silk-label text-cyan-300">{t.trustKicker}</p>
+            <h2 className="mt-2 font-display text-3xl font-black text-white">
               {t.trustTitle}
             </h2>
 
@@ -221,18 +248,18 @@ export default async function Home() {
               {trustItems.map((item) => (
                 <div
                   key={item.title}
-                  className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                  className="rounded-2xl bg-[#0B2E6B]/45 p-6 ring-[1.5px] ring-cyan-400/25"
                 >
                   <div
                     aria-hidden
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-400/20 text-xl ring-1 ring-white/10"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0B2E6B] text-cyan-400 ring-1 ring-cyan-400/40"
                   >
-                    {item.icon}
+                    <Icon name={item.icon} size={22} />
                   </div>
-                  <h3 className="mt-4 font-display font-bold tracking-tight text-white">
+                  <h3 className="mt-4 font-display text-sm font-extrabold text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-1.5 text-sm text-slate-300">{item.desc}</p>
+                  <p className="mt-1.5 text-[15px] text-slate-300">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -242,16 +269,16 @@ export default async function Home() {
         {/* Contact */}
         <section className="relative py-16">
           <div className="mx-auto max-w-6xl px-4 lg:px-10">
-            <p className="silk-label text-cyan-300/80">{t.contactKicker}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+            <p className="silk-label text-cyan-300">{t.contactKicker}</p>
+            <h2 className="mt-2 font-display text-3xl font-black text-white">
               {t.contactTitle}
             </h2>
 
-            <div className="mt-10 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 sm:p-8">
+            <div className="mt-10 rounded-2xl bg-[#0B2E6B]/45 p-6 ring-[1.5px] ring-cyan-400/25 sm:p-8">
               <dl className="grid gap-6 sm:grid-cols-3">
                 {settings.shopAddress && (
                   <div>
-                    <dt className="silk-label text-cyan-300/80">
+                    <dt className="silk-label text-cyan-300">
                       {t.contactAddressLabel}
                     </dt>
                     <dd className="mt-1.5 text-slate-300">{settings.shopAddress}</dd>
@@ -259,7 +286,7 @@ export default async function Home() {
                 )}
                 {settings.shopPhone && (
                   <div>
-                    <dt className="silk-label text-cyan-300/80">
+                    <dt className="silk-label text-cyan-300">
                       {t.contactPhoneLabel}
                     </dt>
                     <dd className="mt-1.5 text-slate-300">
@@ -274,7 +301,7 @@ export default async function Home() {
                 )}
                 {settings.shopHours && (
                   <div>
-                    <dt className="silk-label text-cyan-300/80">
+                    <dt className="silk-label text-cyan-300">
                       {t.contactHoursLabel}
                     </dt>
                     <dd className="mt-1.5 text-slate-300">{settings.shopHours}</dd>
@@ -287,7 +314,7 @@ export default async function Home() {
                   href={waMeLink(whatsappNumber, t.whatsappPrefill)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-8 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+                  className="mt-8 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 font-display text-xs font-extrabold tracking-[0.1em] text-white shadow-lg shadow-violet-600/30 transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
                 >
                   {t.contactWhatsappCta}
                 </a>

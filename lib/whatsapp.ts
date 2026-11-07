@@ -41,8 +41,10 @@ export async function sendWhatsapp(opts: {
   to: string | null | undefined;
   body: string;
   templateParams?: WhatsappTemplateParams;
+  /** Template language code (must match an approved Meta template). Defaults to "en". */
+  templateLang?: string;
 }): Promise<void> {
-  const { ticketId, body, templateParams } = opts;
+  const { ticketId, body, templateParams, templateLang } = opts;
   const to = opts.to;
   if (!to) return;
 
@@ -61,7 +63,7 @@ export async function sendWhatsapp(opts: {
 
   // Build the message payload
   const payload = templateParams
-    ? buildTemplatePayload(normalizedTo, templateParams)
+    ? buildTemplatePayload(normalizedTo, templateParams, templateLang ?? "en")
     : buildTextPayload(normalizedTo, body);
 
   try {
@@ -127,11 +129,15 @@ export async function sendTicketStatusWhatsapp(opts: {
   device: string;
   quoteAmount?: number | null;
   eta?: string | null;
+  /** Customer's preferred language: "ar" | "en". Defaults to "en". */
+  locale?: string;
 }): Promise<void> {
   const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/track/${opts.code}`;
+  const locale = opts.locale === "ar" ? "ar" : "en";
   await sendWhatsapp({
     ticketId: opts.ticketId,
     to: opts.to,
+    templateLang: locale,
     body: customerStatusMessage({
       customerName: opts.customerName,
       code: opts.code,
@@ -139,6 +145,7 @@ export async function sendTicketStatusWhatsapp(opts: {
       device: opts.device,
       quoteAmount: opts.quoteAmount,
       eta: opts.eta,
+      locale,
     }),
     templateParams: {
       customerName: opts.customerName,
@@ -148,6 +155,7 @@ export async function sendTicketStatusWhatsapp(opts: {
         device: opts.device,
         quoteAmount: opts.quoteAmount,
         eta: opts.eta,
+        locale,
       }),
       trackUrl,
     },
@@ -158,14 +166,14 @@ export async function sendTicketStatusWhatsapp(opts: {
 // Payload builders
 // ---------------------------------------------------------------------------
 
-function buildTemplatePayload(to: string, p: WhatsappTemplateParams) {
+function buildTemplatePayload(to: string, p: WhatsappTemplateParams, langCode: string) {
   return {
     messaging_product: "whatsapp",
     to,
     type: "template",
     template: {
       name: "ticket_update",
-      language: { code: "en" },
+      language: { code: langCode },
       components: [
         {
           type: "body",

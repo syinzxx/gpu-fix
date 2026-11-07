@@ -34,6 +34,7 @@ model Customer {
   whatsapp  String?
   email     String?
   notes     String?
+  locale    String   @default("ar") // language for WhatsApp notifications: "ar" | "en"
   createdAt DateTime @default(now())
   tickets   Ticket[]
 }

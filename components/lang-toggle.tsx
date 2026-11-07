@@ -11,7 +11,7 @@ export function LangToggle({
 }) {
   const variantClasses =
     variant === "dark"
-      ? "text-slate-400 hover:bg-white/10 hover:text-white"
+      ? "text-slate-400 hover:bg-white/10 hover:text-cyan-400"
       : "text-slate-400 hover:bg-slate-100 hover:text-slate-700";
 
   return (

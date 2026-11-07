@@ -5,16 +5,18 @@ import { getSettings } from "@/lib/settings";
 import { getLocale, getT } from "@/lib/locale";
 import { LangToggle } from "@/components/lang-toggle";
 import { BrandMark } from "@/components/icons";
+import { canOpenLibrary } from "@/lib/library/access";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const { user } = session;
-  const [settings, t, locale] = await Promise.all([getSettings(), getT(), getLocale()]);
+  const [settings, t, locale, libraryAllowed] = await Promise.all([getSettings(), getT(), getLocale(), canOpenLibrary()]);
 
-  const NAV: (NavItem & { adminOnly?: boolean; roles?: string[] })[] = [
+  const NAV: (NavItem & { adminOnly?: boolean; roles?: string[]; desktopOnly?: boolean })[] = [
     { href: "/dashboard", label: t.overview, icon: "overview" },
     { href: "/dashboard/tickets", label: t.tickets, icon: "ticket" },
+    { href: "/dashboard/library", label: t.library, icon: "library", desktopOnly: true },
     { href: "/dashboard/inventory", label: t.inventory, icon: "box" },
     { href: "/dashboard/customers", label: t.customers, icon: "users" },
     { href: "/dashboard/reports", label: t.reports, icon: "chart" },
@@ -33,7 +35,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         <DashboardNav
           items={NAV.filter(
-            (item) => (!item.adminOnly || user.role === "ADMIN") && (!item.roles || item.roles.includes(user.role))
+            (item) =>
+              (!item.adminOnly || user.role === "ADMIN") &&
+              (!item.roles || item.roles.includes(user.role)) &&
+              (!item.desktopOnly || libraryAllowed)
           ).map(({ href, label, icon }) => ({ href, label, icon }))}
         />
 

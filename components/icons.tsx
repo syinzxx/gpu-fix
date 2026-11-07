@@ -29,6 +29,8 @@ const PATHS = {
   staff: "M12 7m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0 M5 20c.8-3.5 3.5-5.5 7-5.5s6.2 2 7 5.5 M18 3l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L15 5.3l2-.3z",
   settings: "M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1",
   message: "M3 5h18v14H3z M3 6l9 7 9-7",
+  library: "M4 5l2-2h5l2 3h7v13H4z M9 13h6",
+  close: "M6 6l12 12 M18 6L6 18",
 } as const;
 
 export type IconName = keyof typeof PATHS;

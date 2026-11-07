@@ -276,3 +276,86 @@ model TicketChecklistItem {
 
   @@index([ticketId])
 }
+
+// ---------------------------------------------------------------------------
+// Board library. Files stay where they are: only their locations are stored.
+// ---------------------------------------------------------------------------
+
+// A storage folder. Moving the files to a server means changing this one path.
+model LibraryRoot {
+  id        String      @id @default(cuid())
+  label     String
+  path      String      @unique
+  priority  Int         @default(0) // lowest wins when the same file exists in several folders
+  createdAt DateTime    @default(now())
+  files     BoardFile[]
+}
+
+// One physical board revision. Folders in the UI are a view of these fields.
+model Board {
+  id             String       @id @default(cuid())
+  identityKey    String       @unique // set by the scanner, stable across rescans
+  gpuMaker       String // NVIDIA | AMD | Intel | Retro
+  generation     String
+  gpuModel       String
+  cardBrand      String
+  cardName       String       @default("")
+  boardCode      String?
+  revision       String?
+  memoryType     String?
+  memorySize     String?
+  notes          String?
+  manuallyEdited Boolean      @default(false) // rescans never overwrite these fields when true
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  aliases        BoardAlias[]
+  files          BoardFile[]
+
+  @@index([gpuModel])
+  @@index([cardBrand])
+  @@index([boardCode])
+}
+
+// Every name a board goes by: RTX 5090, N5090, GV-N5090..., board codes.
+model BoardAlias {
+  id         String @id @default(cuid())
+  boardId    String
+  board      Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  alias      String
+  normalised String
+
+  @@unique([boardId, normalised])
+  @@index([normalised])
+}
+
+// FileType: BOARDVIEW | SCHEMATIC | BOARDVIEW_PDF | BIOS | OTHER | IGNORED
+// Status: ACTIVE | MISSING. ReviewState: CONFIRMED | INBOX.
+model BoardFile {
+  id            String      @id @default(cuid())
+  boardId       String?
+  board         Board?      @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  libraryRootId String
+  libraryRoot   LibraryRoot @relation(fields: [libraryRootId], references: [id], onDelete: Cascade)
+  relativePath  String
+  originalName  String
+  fileType      String
+  sha256        String?
+  size          Int
+  mtimeMs       Float
+  revision      String?
+  status        String      @default("ACTIVE")
+  reviewState   String      @default("INBOX")
+  reviewReason  String? // why it is waiting in the Inbox
+  suggestion    String? // JSON of the scanner's best guess, shown in the Inbox
+  duplicateOfId String?
+  duplicateOf   BoardFile?  @relation("Duplicates", fields: [duplicateOfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  duplicates    BoardFile[] @relation("Duplicates")
+  lockedByUser  Boolean     @default(false) // rescans never move a file the user placed
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([libraryRootId, relativePath])
+  @@index([boardId])
+  @@index([sha256])
+  @@index([reviewState])
+}

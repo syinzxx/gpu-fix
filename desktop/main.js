@@ -58,6 +58,8 @@ function createMainWindow(url) {
     show: false,
   });
 
+  // The server uses this to keep the board library inside the PC app (lib/library/access.ts).
+  mainWindow.webContents.setUserAgent(`${mainWindow.webContents.getUserAgent()} GPUFixDesktop`);
   mainWindow.loadURL(url);
 
   mainWindow.once("ready-to-show", () => {

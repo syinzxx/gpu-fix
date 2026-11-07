@@ -5,11 +5,13 @@ import {
   addBoardAlias,
   createBoardFromFile,
   deleteBoard,
+  deleteMeasurement,
   mergeBoardInto,
   moveFileToBoard,
   removeBoardAlias,
   updateBoard,
 } from "@/app/actions/library";
+import { AddReadingForm } from "@/components/board-readings";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { Icon } from "@/components/icons";
 import { BoardInput, BoardOptions } from "@/components/library-picker";
@@ -19,6 +21,7 @@ import { Badge, Button, Card, CardHeader, EmptyState, Input, Label, Textarea } f
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canOpenLibrary } from "@/lib/library/access";
+import { formatSpread, formatValue, summarise } from "@/lib/library/measurements";
 import { choosePair } from "@/lib/library/pairing";
 import { loadBoardSummaries } from "@/lib/library/queries";
 import { boardTitle } from "@/lib/library/search";
@@ -48,6 +51,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
       include: {
         aliases: { orderBy: { alias: "asc" } },
         files: { include: { libraryRoot: true, _count: { select: { duplicates: true } } } },
+        measurements: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         tickets: {
           orderBy: { createdAt: "desc" },
           select: { id: true, code: true, issue: true, staffStatus: true, createdAt: true, customer: { select: { name: true } } },
@@ -69,6 +73,9 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   // File names stay searchable, but listing every copy here would bury the real names.
   const shownAliases = board.aliases.filter((a) => !/\.[a-z0-9]{2,5}$/i.test(a.alias));
   const save = updateBoard.bind(null, board.id);
+  const readingRows = summarise(board.measurements);
+  const modeLabels: Record<string, string> = { DIODE: t.libModeDiode, RESISTANCE: t.libModeResistance, VOLTAGE: t.libModeVoltage };
+  const polarityLabels: Record<string, string> = { RED_ON_GROUND: t.libRedOnGround, BLACK_ON_GROUND: t.libBlackOnGround, NOT_APPLICABLE: "" };
   const addAlias = addBoardAlias.bind(null, board.id);
   const fields = [
     { name: "cardBrand", label: t.libBrand, value: board.cardBrand, required: true },
@@ -139,6 +146,68 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
               ))}
             </ul>
             <p className="border-t border-slate-100 px-5 py-2.5 text-sm text-slate-500">{t.libFilesNote}</p>
+          </Card>
+
+          <Card>
+            <CardHeader title={`${t.libReadings} (${board.measurements.length})`} />
+            {readingRows.length === 0 ? (
+              <EmptyState message={t.libNoReadings} />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-start text-xs font-bold tracking-wider text-slate-500 uppercase">
+                      <th className="px-5 py-2 text-start">{t.libReadingTarget}</th>
+                      <th className="px-3 py-2 text-start">{t.libReadingMode}</th>
+                      <th className="px-3 py-2 text-start">{t.libGood}</th>
+                      <th className="px-3 py-2 text-start">{t.libFaulty}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {readingRows.map((row) => (
+                      <tr key={[row.target, row.mode, row.polarity].join("|")} className="border-t border-slate-100 align-top">
+                        <td className="px-5 py-2 font-bold text-slate-900" dir="ltr">{row.target}</td>
+                        <td className="px-3 py-2 text-slate-600">
+                          {modeLabels[row.mode]}
+                          {polarityLabels[row.polarity] && <span className="block text-xs text-slate-400">{polarityLabels[row.polarity]}</span>}
+                        </td>
+                        <td className="px-3 py-2 text-emerald-700" dir="ltr">
+                          {formatSpread(row.good, row.mode)}
+                          {row.good.count > 0 && <span className="block text-xs text-slate-400">{t.libCards} {row.good.count}</span>}
+                        </td>
+                        <td className="px-3 py-2 text-rose-600" dir="ltr">
+                          {formatSpread(row.faulty, row.mode)}
+                          {row.faulty.count > 0 && <span className="block text-xs text-slate-400">{t.libCards} {row.faulty.count}</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {canEdit && <AddReadingForm boardId={board.id} t={t} />}
+            {board.measurements.length > 0 && (
+              <details className="border-t border-slate-100 px-5 py-3">
+                <summary className="cursor-pointer text-xs font-bold text-violet-700">{t.libAllReadings}</summary>
+                <ul className="mt-2 divide-y divide-slate-100">
+                  {board.measurements.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                      <span className="min-w-0">
+                        <span dir="ltr" className="font-semibold text-slate-800">{m.target} {formatValue(m.value, m.mode)}</span>
+                        <span className="block text-xs text-slate-400">
+                          {[m.condition === "GOOD" ? t.libGood : t.libFaulty, m.meter, m.createdBy?.name, fmtDate(m.createdAt), m.note].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                      {canEdit && (
+                        <form action={deleteMeasurement.bind(null, m.id, board.id)}>
+                          <ConfirmSubmitButton size="sm" variant="ghost" confirmMessage={t.libDeleteReadingConfirm}>{t.libRemove}</ConfirmSubmitButton>
+                        </form>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </Card>
 
           <Card>

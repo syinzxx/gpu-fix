@@ -24,6 +24,7 @@ model User {
   paymentsReceived Payment[]   @relation("PaymentsReceived")
   expensesCreated Expense[]    @relation("ExpensesCreated")
   attachmentsUploaded Attachment[]          @relation("AttachmentsUploaded")
+  measurements   Measurement[]
   checklistItemsChecked TicketChecklistItem[] @relation("ChecklistCheckedBy")
 }
 
@@ -314,6 +315,7 @@ model Board {
   aliases        BoardAlias[]
   files          BoardFile[]
   tickets        Ticket[]
+  measurements   Measurement[]
 
   @@index([gpuModel])
   @@index([cardBrand])
@@ -362,4 +364,25 @@ model BoardFile {
   @@index([boardId])
   @@index([sha256])
   @@index([reviewState])
+}
+
+// A reading taken on the bench. Mode: DIODE | RESISTANCE | VOLTAGE.
+// Polarity: RED_ON_GROUND | BLACK_ON_GROUND | NOT_APPLICABLE. Condition: GOOD | FAULTY.
+model Measurement {
+  id          String   @id @default(cuid())
+  boardId     String
+  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  target      String // net or part, for example FBVDDQ or U2000
+  mode        String
+  polarity    String   @default("NOT_APPLICABLE")
+  condition   String   @default("GOOD")
+  value       Float? // volts or ohms, null when the meter reads open (OL)
+  meter       String?
+  note        String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([boardId])
+  @@index([target])
 }

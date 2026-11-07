@@ -8,6 +8,7 @@ import { requireRole, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireLibraryAccess } from "@/lib/library/access";
 import { aliasesForModels, describeModel } from "@/lib/library/classify";
+import { CONDITIONS, MODES, POLARITIES, parseReading } from "@/lib/library/measurements";
 import { normalise } from "@/lib/library/normalise";
 import { scanLibrary, type ScanSummary } from "@/lib/library/scan";
 
@@ -155,6 +156,7 @@ export async function mergeBoardInto(boardId: string, form: FormData) {
   });
   await addAliases(target.id, aliases.map((a) => a.alias));
   await db.ticket.updateMany({ where: { boardId }, data: { boardId: target.id } });
+  await db.measurement.updateMany({ where: { boardId }, data: { boardId: target.id } });
   await db.board.update({ where: { id: target.id }, data: { manuallyEdited: true } });
   await db.board.delete({ where: { id: boardId } });
   refresh(target.id);
@@ -181,6 +183,46 @@ export async function unlinkTicketBoard(ticketId: string) {
   refresh(boardId ?? undefined);
 }
 
+export type MeasurementState = { ok?: boolean; error?: "target" | "value" };
+
+export async function addMeasurement(boardId: string, _previous: MeasurementState, form: FormData): Promise<MeasurementState> {
+  await requireLibraryAccess();
+  const user = await requireRole("ADMIN", "TECHNICIAN");
+  const target = text(form, "target");
+  const mode = text(form, "mode");
+  const condition = text(form, "condition");
+  const polarity = mode === "DIODE" ? text(form, "polarity") : "NOT_APPLICABLE";
+  const isOpen = form.get("open") === "on";
+  const value = isOpen ? null : parseReading(text(form, "value"), text(form, "unit"));
+
+  const known = (list: readonly string[], item: string) => list.includes(item);
+  if (!target) return { error: "target" };
+  if (!known(MODES, mode) || !known(CONDITIONS, condition) || !known(POLARITIES, polarity)) return { error: "value" };
+  if (!isOpen && value === null) return { error: "value" };
+
+  await db.measurement.create({
+    data: {
+      boardId,
+      target,
+      mode,
+      polarity,
+      condition,
+      value,
+      meter: optional(form, "meter"),
+      note: optional(form, "note"),
+      createdById: user.id,
+    },
+  });
+  refresh(boardId);
+  return { ok: true };
+}
+
+export async function deleteMeasurement(id: string, boardId: string) {
+  await requireEditor();
+  await db.measurement.delete({ where: { id } });
+  refresh(boardId);
+}
+
 async function requireFolderAdmin() {
   await requireLibraryAccess();
   return requireRole("ADMIN");
@@ -203,7 +245,9 @@ export async function removeLibraryFolder(rootId: string) {
   await db.boardFile.updateMany({ where: { libraryRootId: rootId }, data: { duplicateOfId: null } });
   await db.boardFile.updateMany({ where: { duplicateOf: { libraryRootId: rootId } }, data: { duplicateOfId: null } });
   await db.libraryRoot.delete({ where: { id: rootId } });
-  await db.board.deleteMany({ where: { manuallyEdited: false, files: { none: {} }, tickets: { none: {} } } });
+  await db.board.deleteMany({
+    where: { manuallyEdited: false, files: { none: {} }, tickets: { none: {} }, measurements: { none: {} } },
+  });
   refresh();
   revalidatePath("/dashboard/library/folders");
 }

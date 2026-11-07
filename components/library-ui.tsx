@@ -7,6 +7,7 @@ export function badgeLabel(key: string, t: Translations): string {
   if (key === "boardview") return t.libBoardview;
   if (key === "schematic") return t.libSchematic;
   if (key === "history") return t.libHistory;
+  if (key === "readings") return t.libReadings;
   return t.libBios;
 }
 

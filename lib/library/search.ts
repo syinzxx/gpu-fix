@@ -12,6 +12,7 @@ export type BoardSummary = {
   aliases: string[];
   fileTypes: string[];
   ticketCount?: number;
+  readingCount?: number;
 };
 
 export type BoardFilters = {
@@ -29,6 +30,7 @@ export const FILE_BADGES = [
   { key: "boardview", types: ["BOARDVIEW", "BOARDVIEW_PDF"] },
   { key: "schematic", types: ["SCHEMATIC"] },
   { key: "bios", types: ["BIOS"] },
+  { key: "readings", types: [] },
   { key: "history", types: [] },
 ] as const;
 
@@ -36,6 +38,7 @@ export type BadgeKey = (typeof FILE_BADGES)[number]["key"];
 
 export function hasBadge(board: BoardSummary, key: string): boolean {
   if (key === "history") return (board.ticketCount ?? 0) > 0;
+  if (key === "readings") return (board.readingCount ?? 0) > 0;
   const badge = FILE_BADGES.find((b) => b.key === key);
   return !!badge && board.fileTypes.some((t) => (badge.types as readonly string[]).includes(t));
 }

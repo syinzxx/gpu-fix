@@ -87,6 +87,11 @@ test("the history filter finds boards with linked repairs", () => {
   assert.deepEqual(ids(filterBoards(list, { has: ["history"] })), ["x"]);
 });
 
+test("the readings filter finds boards with bench data", () => {
+  const list = [board("x", "RTX 3080", "ASUS", { readingCount: 3 }), board("y", "RTX 3080", "MSI")];
+  assert.deepEqual(ids(filterBoards(list, { has: ["readings"] })), ["x"]);
+});
+
 test("a ticket's brand and model suggest its board", () => {
   const list = [board("x", "RTX 3080", "ASUS", { cardName: "TUF Gaming" }), board("y", "RTX 3080", "MSI"), board("z", "RTX 3090", "ASUS")];
   assert.deepEqual(ids(filterBoards(list, { q: "ASUS RTX 3080 TUF Gaming" })), ["x"]);

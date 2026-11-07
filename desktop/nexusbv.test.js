@@ -170,3 +170,25 @@ test("a window that refuses to close stops the open", { timeout: 20000 }, async 
   nexus.stop();
   fs.rmSync(dir, { recursive: true });
 });
+
+test("PDF text comes back from the file NexusBV writes", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nexusbv-"));
+  const output = path.join(dir, "text.json");
+  const fake = fakeNexus(dir, () => {
+    fs.writeFileSync(output, JSON.stringify({ pages: [{ text: "GDDR6" }] }));
+    return "saved";
+  });
+  const nexus = createNexusBV({ getDir: () => dir, spawnProcess: fake.spawnProcess, processes: noWindows });
+  assert.deepEqual(await nexus.extractText("D:\\a.pdf", output), { pages: [{ text: "GDDR6" }] });
+  nexus.stop();
+  fs.rmSync(dir, { recursive: true });
+});
+
+test("a closed NexusBV stops PDF reading with a clear code", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nexusbv-"));
+  const fake = fakeNexus(dir, () => "Failed to send command to NexusBV.");
+  const nexus = createNexusBV({ getDir: () => dir, spawnProcess: fake.spawnProcess, processes: noWindows });
+  await assert.rejects(nexus.extractText("D:\\a.pdf", path.join(dir, "text.json")), { code: "NOT_RUNNING" });
+  nexus.stop();
+  fs.rmSync(dir, { recursive: true });
+});

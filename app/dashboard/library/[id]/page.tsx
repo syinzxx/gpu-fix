@@ -1,7 +1,16 @@
 import path from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addBoardAlias, moveFileToBoard, removeBoardAlias, updateBoard } from "@/app/actions/library";
+import {
+  addBoardAlias,
+  createBoardFromFile,
+  deleteBoard,
+  mergeBoardInto,
+  moveFileToBoard,
+  removeBoardAlias,
+  updateBoard,
+} from "@/app/actions/library";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { Icon } from "@/components/icons";
 import { BoardInput, BoardOptions } from "@/components/library-picker";
 import { NexusBVPanel } from "@/components/nexusbv-panel";
@@ -110,6 +119,14 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
                           {t.libMoveFile}
                         </Button>
                       </form>
+                      <form action={createBoardFromFile.bind(null, file.id)} className="mt-2">
+                        <input type="hidden" name="cardBrand" value={board.cardBrand} />
+                        <input type="hidden" name="gpuModel" value={board.gpuModel} />
+                        <input type="hidden" name="cardName" value={board.cardName} />
+                        <input type="hidden" name="boardCode" value={board.boardCode ?? ""} />
+                        <input type="hidden" name="revision" value={file.revision ?? board.revision ?? ""} />
+                        <Button type="submit" size="sm" variant="ghost">{t.libSplitFile}</Button>
+                      </form>
                     </details>
                   )}
                 </li>
@@ -174,6 +191,25 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <Button type="submit">{t.libSave}</Button>
               </form>
+            </Card>
+          ) : null}
+
+          {canEdit ? (
+            <Card>
+              <CardHeader title={t.libManageBoard} />
+              <div className="space-y-3 p-5">
+                <form action={mergeBoardInto.bind(null, board.id)} className="flex gap-2">
+                  <BoardInput listId={PICKER_ID} placeholder={t.libMergePlaceholder} />
+                  <ConfirmSubmitButton size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" confirmMessage={t.libMergeConfirm}>
+                    {t.libMerge}
+                  </ConfirmSubmitButton>
+                </form>
+                <form action={deleteBoard.bind(null, board.id)}>
+                  <ConfirmSubmitButton size="sm" variant="danger" confirmMessage={t.libDeleteBoardConfirm}>
+                    {t.libDeleteBoard}
+                  </ConfirmSubmitButton>
+                </form>
+              </div>
             </Card>
           ) : (
             board.notes && (

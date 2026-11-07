@@ -10,6 +10,7 @@ const path = require("path");
 const BOARD_EXT = new Set([".cad", ".tvw", ".fz", ".pcb", ".bdv", ".faz", ".brd", ".asc", ".bv", ".cst"]);
 const REPLY_TIMEOUT_MS = 8000;
 const OPEN_TIMEOUT_MS = 20000;
+const EXTRACT_TIMEOUT_MS = 120000;
 const OPEN_POLL_MS = 700;
 const OPEN_CHECK_TIMEOUT_MS = 2500; // NexusBV ignores requests while it starts up
 const CLOSE_TIMEOUT_MS = 15000;
@@ -233,13 +234,26 @@ function createNexusBV({ getDir, spawnProcess = spawn, processes = windowsProces
   const getState = () =>
     callText("get_board_state").then((text) => ({ ...readReply(text), board: activeBoardPath(text) }));
 
+  /** Reads a PDF's text by file path, without changing what NexusBV shows. */
+  async function extractText(pdf, outputPath) {
+    fs.rmSync(outputPath, { force: true });
+    const text = await callText(
+      "extract_pdfium_text",
+      { pdf_path: pdf, output_path: outputPath, include_text: true, include_words: false },
+      EXTRACT_TIMEOUT_MS
+    );
+    if (/failed to send command/i.test(text)) throw new NexusError("NOT_RUNNING");
+    if (!fs.existsSync(outputPath)) throw new NexusError("NOT_FOUND");
+    return JSON.parse(fs.readFileSync(outputPath, "utf8"));
+  }
+
   function stop() {
     const running = child;
     drop("NOT_RUNNING");
     running?.kill();
   }
 
-  return { open, selectNet, selectComponent, selectPin, getState, stop };
+  return { open, selectNet, selectComponent, selectPin, getState, extractText, stop };
 }
 
 module.exports = { NexusError, createNexusBV, isAllowedSender, openableFile, parseFields, readReply, activeBoardPath };

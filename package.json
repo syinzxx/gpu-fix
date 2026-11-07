@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "tsx --test lib/library/*.test.ts desktop/*.test.js",
     "library:scan": "tsx scripts/library-scan.ts",
+    "library:index": "tsx scripts/library-index-text.ts",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"

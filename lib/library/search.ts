@@ -20,6 +20,8 @@ export type BoardFilters = {
   gpu?: string;
   brand?: string;
   has?: string[];
+  /** Boards to include even when only their PDFs matched the search words. */
+  alsoMatching?: Set<string>;
 };
 
 export const FILE_BADGES = [
@@ -97,6 +99,7 @@ function searchFields(board: BoardSummary): string[] {
 export function filterBoards(boards: BoardSummary[], filters: BoardFilters): BoardSummary[] {
   const q = filters.q?.trim() ?? "";
   const browsing = !q && !filters.maker && !filters.generation && !filters.gpu && !filters.brand;
+  const named = (b: BoardSummary) => !q || matchesAllWords(q, searchFields(b));
   return boards
     .filter((b) => {
       if (browsing && b.gpuMaker === "Retro") return false;
@@ -105,11 +108,12 @@ export function filterBoards(boards: BoardSummary[], filters: BoardFilters): Boa
       if (filters.gpu && b.gpuModel !== filters.gpu) return false;
       if (filters.brand && b.cardBrand !== filters.brand) return false;
       if (filters.has?.some((key) => !hasBadge(b, key))) return false;
-      return !q || matchesAllWords(q, searchFields(b));
+      return named(b) || !!filters.alsoMatching?.has(b.id);
     })
     .sort(
       (a, b) =>
         Number(isExactCode(b, q)) - Number(isExactCode(a, q)) ||
+        Number(named(b)) - Number(named(a)) ||
         Number(a.gpuMaker === "Retro") - Number(b.gpuMaker === "Retro") ||
         compareGpus(a.gpuModel, b.gpuModel) ||
         naturalCompare(a.cardBrand, b.cardBrand) ||

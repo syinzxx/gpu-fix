@@ -3,7 +3,7 @@ import { BoardBadges, badgeLabel } from "@/components/library-ui";
 import { Icon } from "@/components/icons";
 import { Badge, Button, Card, EmptyState } from "@/components/ui";
 import { canOpenLibrary } from "@/lib/library/access";
-import { inboxCount, loadBoardSummaries } from "@/lib/library/queries";
+import { boardsMentioning, inboxCount, loadBoardSummaries } from "@/lib/library/queries";
 import {
   FILE_BADGES,
   boardTitle,
@@ -145,7 +145,8 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
 
   const has = [params.has ?? []].flat();
   const mode = params.mode === "brand" ? "brand" : "gpu";
-  const found = filterBoards(all, { ...params, has });
+  const inPdf = params.q ? await boardsMentioning(params.q) : new Set<string>();
+  const found = filterBoards(all, { ...params, has, alsoMatching: inPdf });
   const suggestions = found.length === 0 && params.q ? closeMatches(all, params.q) : [];
   const shown = found.slice(0, MAX_SHOWN);
   const switchClear = { mode: undefined, maker: undefined, generation: undefined, gpu: undefined, brand: undefined };
@@ -157,11 +158,16 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">{t.library}</h1>
           <p className="text-sm text-slate-500">{t.libraryDesc}</p>
         </div>
-        <Link href="/dashboard/library/inbox">
-          <Button variant="secondary" type="button">
-            {t.libInbox} ({waiting})
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/library/folders">
+            <Button variant="secondary" type="button">{t.libFolders}</Button>
+          </Link>
+          <Link href="/dashboard/library/inbox">
+            <Button variant="secondary" type="button">
+              {t.libInbox} ({waiting})
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <form className="flex items-center gap-2 rounded-xl border-2 border-violet-500 bg-white px-3">
@@ -250,6 +256,9 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                         {boardTitle(board)}
                         {params.q && isExactCode(board, params.q) && (
                           <Badge className="ms-2 bg-violet-600 text-white">{t.libExactCode}</Badge>
+                        )}
+                        {inPdf.has(board.id) && (
+                          <Badge className="ms-2 bg-slate-100 text-slate-600">{t.libInSchematic}</Badge>
                         )}
                       </span>
                       <span className="block truncate text-sm text-slate-500">

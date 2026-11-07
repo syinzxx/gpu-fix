@@ -1,5 +1,7 @@
 "use server";
 
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
@@ -7,6 +9,7 @@ import { db } from "@/lib/db";
 import { requireLibraryAccess } from "@/lib/library/access";
 import { aliasesForModels, describeModel } from "@/lib/library/classify";
 import { normalise } from "@/lib/library/normalise";
+import { scanLibrary, type ScanSummary } from "@/lib/library/scan";
 
 async function requireEditor() {
   await requireLibraryAccess();
@@ -103,7 +106,7 @@ export async function createBoardFromFile(fileId: string, form: FormData) {
   await requireEditor();
   const fields = boardFields(form);
   const file = await db.boardFile.findUniqueOrThrow({ where: { id: fileId } });
-  const board = await db.board.create({ data: { identityKey: `manual|${fileId}`, ...fields } });
+  const board = await db.board.create({ data: { identityKey: `manual|${fileId}|${Date.now()}`, ...fields } });
   await addAliases(board.id, [
     ...aliasesForModels([fields.gpuModel], fields.boardCode, fields.cardBrand),
     file.originalName,
@@ -111,4 +114,90 @@ export async function createBoardFromFile(fileId: string, form: FormData) {
   await placeFile(fileId, board.id);
   refresh(board.id);
   redirect(`/dashboard/library/${board.id}`);
+}
+
+/** The board goes, the files do not. They wait in the Inbox and stay out of rescans. */
+export async function deleteBoard(boardId: string) {
+  await requireEditor();
+  const board = await db.board.findUniqueOrThrow({ where: { id: boardId } });
+  await db.$transaction([
+    db.boardFile.updateMany({
+      where: { boardId },
+      data: {
+        boardId: null,
+        lockedByUser: true,
+        reviewState: "INBOX",
+        reviewReason: "Returned from a deleted board.",
+        suggestion: JSON.stringify({
+          gpuModel: board.gpuModel,
+          cardBrand: board.cardBrand,
+          boardCode: board.boardCode,
+          revision: board.revision,
+        }),
+      },
+    }),
+    db.board.delete({ where: { id: boardId } }),
+  ]);
+  refresh();
+  redirect("/dashboard/library");
+}
+
+/** Everything from this board moves to the chosen one, including its names. */
+export async function mergeBoardInto(boardId: string, form: FormData) {
+  await requireEditor();
+  const targetId = boardIdFromPicker(text(form, "board"));
+  if (targetId === boardId) throw new Error("Choose a different board.");
+  const target = await db.board.findUniqueOrThrow({ where: { id: targetId } });
+  const aliases = await db.boardAlias.findMany({ where: { boardId } });
+  await db.boardFile.updateMany({
+    where: { boardId },
+    data: { boardId: target.id, lockedByUser: true, reviewState: "CONFIRMED", reviewReason: null, suggestion: null },
+  });
+  await addAliases(target.id, aliases.map((a) => a.alias));
+  await db.board.update({ where: { id: target.id }, data: { manuallyEdited: true } });
+  await db.board.delete({ where: { id: boardId } });
+  refresh(target.id);
+  redirect(`/dashboard/library/${target.id}`);
+}
+
+async function requireFolderAdmin() {
+  await requireLibraryAccess();
+  return requireRole("ADMIN");
+}
+
+export async function addLibraryFolder(form: FormData) {
+  await requireFolderAdmin();
+  const folder = text(form, "path");
+  if (!path.win32.isAbsolute(folder) || !existsSync(folder)) throw new Error("That folder could not be found.");
+  const last = await db.libraryRoot.findFirst({ orderBy: { priority: "desc" } });
+  await db.libraryRoot.create({
+    data: { label: path.win32.basename(folder), path: folder, priority: (last?.priority ?? -1) + 1 },
+  });
+  revalidatePath("/dashboard/library/folders");
+}
+
+/** Removes the records only, never the files on disk. */
+export async function removeLibraryFolder(rootId: string) {
+  await requireFolderAdmin();
+  await db.boardFile.updateMany({ where: { libraryRootId: rootId }, data: { duplicateOfId: null } });
+  await db.boardFile.updateMany({ where: { duplicateOf: { libraryRootId: rootId } }, data: { duplicateOfId: null } });
+  await db.libraryRoot.delete({ where: { id: rootId } });
+  await db.board.deleteMany({ where: { manuallyEdited: false, files: { none: {} } } });
+  refresh();
+  revalidatePath("/dashboard/library/folders");
+}
+
+export type RescanState = { summary?: ScanSummary; error?: boolean };
+
+export async function rescanLibrary(): Promise<RescanState> {
+  await requireFolderAdmin();
+  const roots = await db.libraryRoot.findMany({ orderBy: { priority: "asc" }, select: { label: true, path: true } });
+  try {
+    const summary = await scanLibrary(db, roots);
+    refresh();
+    revalidatePath("/dashboard/library/folders");
+    return { summary };
+  } catch {
+    return { error: true };
+  }
 }

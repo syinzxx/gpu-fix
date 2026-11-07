@@ -260,7 +260,7 @@ export async function scanLibrary(
   // A rule change can give a board a new identity. Drop the empty board it leaves behind.
   await db.board.deleteMany({ where: { manuallyEdited: false, files: { none: {} } } });
 
-  summary.inbox = usable.filter((f) => f.c.reviewReason).length;
+  summary.inbox = await db.boardFile.count({ where: { reviewState: "INBOX", status: "ACTIVE", duplicateOfId: null } });
   return summary;
 }
 

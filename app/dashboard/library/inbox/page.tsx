@@ -24,6 +24,7 @@ function reasonText(reason: string | null, t: Translations) {
     ["The file is empty", t.libReasonEmpty],
     ["Only a V number", t.libReasonGuess],
     ["Nothing in the name", t.libReasonNothing],
+    ["Returned from a deleted", t.libReasonDeleted],
   ];
   return known.filter(([start]) => reason.includes(start)).map(([, text]) => text).join(" ");
 }

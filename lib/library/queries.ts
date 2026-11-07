@@ -1,4 +1,6 @@
+import fs from "node:fs";
 import { db } from "@/lib/db";
+import { INDEX_PATH, findHashes, openIndex } from "./text-index";
 import type { BoardSummary } from "./search";
 
 /** About 1,600 boards, small enough to search in memory with every alias. */
@@ -21,6 +23,30 @@ export async function loadBoardSummaries(): Promise<BoardSummary[]> {
     aliases: b.aliases.map((a) => a.alias),
     fileTypes: b.files.map((f) => f.fileType),
   }));
+}
+
+const HASHES_PER_QUERY = 500;
+
+/** Boards whose PDFs mention the search words. Empty until the index has been built. */
+export async function boardsMentioning(query: string): Promise<Set<string>> {
+  if (!fs.existsSync(INDEX_PATH)) return new Set();
+  const index = openIndex();
+  try {
+    const hashes = findHashes(index, query);
+    const boards = new Set<string>();
+    // A term like NVVDD is in nearly every PDF, which is too many values for one query.
+    for (let i = 0; i < hashes.length; i += HASHES_PER_QUERY) {
+      const files = await db.boardFile.findMany({
+        where: { sha256: { in: hashes.slice(i, i + HASHES_PER_QUERY) }, boardId: { not: null } },
+        select: { boardId: true },
+        distinct: ["boardId"],
+      });
+      for (const file of files) boards.add(file.boardId as string);
+    }
+    return boards;
+  } finally {
+    index.close();
+  }
 }
 
 export function inboxCount() {

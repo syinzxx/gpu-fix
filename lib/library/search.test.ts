@@ -75,6 +75,13 @@ test("the brand view holds the same boards as the GPU view", () => {
   assert.equal(brandTree(boards)[0].label, "ASUS");
 });
 
+test("boards found only inside their PDFs follow the name matches", () => {
+  const found = filterBoards(boards, { q: "RTX 5070", alsoMatching: new Set(["c"]) });
+  assert.deepEqual(ids(found), ["a", "b", "c"]);
+  assert.deepEqual(ids(filterBoards(boards, { q: "MP2888", alsoMatching: new Set(["d"]) })), ["d"]);
+  assert.deepEqual(ids(filterBoards(boards, { q: "MP2888", alsoMatching: new Set(["d"]), brand: "MSI" })), []);
+});
+
 test("titles skip empty parts", () => {
   assert.equal(boardTitle({ cardBrand: "MSI", gpuModel: "RTX 4090", cardName: "" }), "MSI RTX 4090");
 });

@@ -11,6 +11,7 @@ export type BoardSummary = {
   revision: string | null;
   aliases: string[];
   fileTypes: string[];
+  ticketCount?: number;
 };
 
 export type BoardFilters = {
@@ -28,11 +29,13 @@ export const FILE_BADGES = [
   { key: "boardview", types: ["BOARDVIEW", "BOARDVIEW_PDF"] },
   { key: "schematic", types: ["SCHEMATIC"] },
   { key: "bios", types: ["BIOS"] },
+  { key: "history", types: [] },
 ] as const;
 
 export type BadgeKey = (typeof FILE_BADGES)[number]["key"];
 
 export function hasBadge(board: BoardSummary, key: string): boolean {
+  if (key === "history") return (board.ticketCount ?? 0) > 0;
   const badge = FILE_BADGES.find((b) => b.key === key);
   return !!badge && board.fileTypes.some((t) => (badge.types as readonly string[]).includes(t));
 }
@@ -121,6 +124,15 @@ export function filterBoards(boards: BoardSummary[], filters: BoardFilters): Boa
         naturalCompare(a.boardCode ?? "", b.boardCode ?? "") ||
         naturalCompare(a.revision ?? "", b.revision ?? "")
     );
+}
+
+/** Boards for a ticket, with the exact GPU ahead of boards that are only shared with it. */
+export function suggestBoards(boards: BoardSummary[], brand: string, model: string, limit = 5): BoardSummary[] {
+  const wanted = normalise(`${brand} ${model}`);
+  const exactGpu = (b: BoardSummary) => wanted.includes(normalise(b.gpuModel));
+  return filterBoards(boards, { q: `${brand} ${model}` })
+    .sort((a, b) => Number(exactGpu(b)) - Number(exactGpu(a)))
+    .slice(0, limit);
 }
 
 function editDistance(a: string, b: string): number {

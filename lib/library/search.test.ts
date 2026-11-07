@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { aliasesForModels, describeModel } from "./classify";
-import { boardTitle, brandTree, closeMatches, compareGpus, filterBoards, gpuTree, type BoardSummary } from "./search";
+import { boardTitle, brandTree, closeMatches, compareGpus, filterBoards, gpuTree, suggestBoards, type BoardSummary } from "./search";
 
 function board(id: string, gpuModel: string, cardBrand: string, extra: Partial<BoardSummary> = {}): BoardSummary {
   return {
@@ -80,6 +80,23 @@ test("boards found only inside their PDFs follow the name matches", () => {
   assert.deepEqual(ids(found), ["a", "b", "c"]);
   assert.deepEqual(ids(filterBoards(boards, { q: "MP2888", alsoMatching: new Set(["d"]) })), ["d"]);
   assert.deepEqual(ids(filterBoards(boards, { q: "MP2888", alsoMatching: new Set(["d"]), brand: "MSI" })), []);
+});
+
+test("the history filter finds boards with linked repairs", () => {
+  const list = [board("x", "RTX 3080", "ASUS", { ticketCount: 2 }), board("y", "RTX 3080", "MSI", { ticketCount: 0 }), board("z", "RTX 3080", "EVGA")];
+  assert.deepEqual(ids(filterBoards(list, { has: ["history"] })), ["x"]);
+});
+
+test("a ticket's brand and model suggest its board", () => {
+  const list = [board("x", "RTX 3080", "ASUS", { cardName: "TUF Gaming" }), board("y", "RTX 3080", "MSI"), board("z", "RTX 3090", "ASUS")];
+  assert.deepEqual(ids(filterBoards(list, { q: "ASUS RTX 3080 TUF Gaming" })), ["x"]);
+  assert.deepEqual(ids(filterBoards(list, { q: "NVIDIA RTX 3080" })).sort(), ["x", "y"]);
+});
+
+test("suggestions put the exact GPU ahead of a shared board", () => {
+  const shared = board("s", "RTX 3090", "ASUS", { cardName: "TUF", aliases: ["RTX 3090", "RTX 3080"] });
+  const exact = board("e", "RTX 3080", "ASUS", { cardName: "TUF" });
+  assert.deepEqual(ids(suggestBoards([shared, exact], "ASUS", "RTX 3080 TUF")), ["e", "s"]);
 });
 
 test("titles skip empty parts", () => {

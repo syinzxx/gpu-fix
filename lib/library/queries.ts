@@ -9,6 +9,7 @@ export async function loadBoardSummaries(): Promise<BoardSummary[]> {
     include: {
       aliases: { select: { alias: true } },
       files: { where: { status: "ACTIVE" }, select: { fileType: true }, distinct: ["fileType"] },
+      _count: { select: { tickets: true } },
     },
   });
   return boards.map((b) => ({
@@ -22,6 +23,7 @@ export async function loadBoardSummaries(): Promise<BoardSummary[]> {
     revision: b.revision,
     aliases: b.aliases.map((a) => a.alias),
     fileTypes: b.files.map((f) => f.fileType),
+    ticketCount: b._count.tickets,
   }));
 }
 

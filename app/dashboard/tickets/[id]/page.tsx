@@ -33,6 +33,7 @@ import { StaffStatusBadge, CustomerStatusBadge, PriorityBadge } from "@/componen
 import { fmtDate, fmtDateTime, money, paymentsTotal, cn } from "@/lib/utils";
 import { getLocale, getT } from "@/lib/locale";
 import { Icon } from "@/components/icons";
+import { TicketBoardCard } from "@/components/ticket-board-card";
 
 const WA_STATUS_COLORS: Record<string, string> = {
   SENT:      "bg-emerald-100 text-emerald-700",
@@ -54,6 +55,7 @@ export default async function TicketDetailPage({
       where: { id },
       include: {
         customer: true,
+        board: true,
         assignedTo: true,
         createdBy: true,
         events: { include: { createdBy: true }, orderBy: { createdAt: "desc" } },
@@ -592,6 +594,8 @@ export default async function TicketDetailPage({
               </div>
             </Card>
           )}
+
+          <TicketBoardCard ticket={ticket} t={t} />
 
           <Card>
             <CardHeader title={t.assignment} />

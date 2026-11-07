@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export function badgeLabel(key: string, t: Translations): string {
   if (key === "boardview") return t.libBoardview;
   if (key === "schematic") return t.libSchematic;
+  if (key === "history") return t.libHistory;
   return t.libBios;
 }
 

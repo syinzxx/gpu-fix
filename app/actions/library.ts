@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireRole } from "@/lib/auth";
+import { requireRole, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireLibraryAccess } from "@/lib/library/access";
 import { aliasesForModels, describeModel } from "@/lib/library/classify";
@@ -154,10 +154,31 @@ export async function mergeBoardInto(boardId: string, form: FormData) {
     data: { boardId: target.id, lockedByUser: true, reviewState: "CONFIRMED", reviewReason: null, suggestion: null },
   });
   await addAliases(target.id, aliases.map((a) => a.alias));
+  await db.ticket.updateMany({ where: { boardId }, data: { boardId: target.id } });
   await db.board.update({ where: { id: target.id }, data: { manuallyEdited: true } });
   await db.board.delete({ where: { id: boardId } });
   refresh(target.id);
   redirect(`/dashboard/library/${target.id}`);
+}
+
+/** Any staff member logging a repair can link its board. */
+export async function linkTicketToBoard(ticketId: string, form: FormData) {
+  await requireLibraryAccess();
+  await requireUser();
+  const board = await db.board.findUnique({ where: { id: boardIdFromPicker(text(form, "board")) } });
+  if (!board) throw new Error("Choose a board from the list.");
+  await db.ticket.update({ where: { id: ticketId }, data: { boardId: board.id } });
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+  refresh(board.id);
+}
+
+export async function unlinkTicketBoard(ticketId: string) {
+  await requireLibraryAccess();
+  await requireUser();
+  const { boardId } = await db.ticket.findUniqueOrThrow({ where: { id: ticketId } });
+  await db.ticket.update({ where: { id: ticketId }, data: { boardId: null } });
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+  refresh(boardId ?? undefined);
 }
 
 async function requireFolderAdmin() {
@@ -182,7 +203,7 @@ export async function removeLibraryFolder(rootId: string) {
   await db.boardFile.updateMany({ where: { libraryRootId: rootId }, data: { duplicateOfId: null } });
   await db.boardFile.updateMany({ where: { duplicateOf: { libraryRootId: rootId } }, data: { duplicateOfId: null } });
   await db.libraryRoot.delete({ where: { id: rootId } });
-  await db.board.deleteMany({ where: { manuallyEdited: false, files: { none: {} } } });
+  await db.board.deleteMany({ where: { manuallyEdited: false, files: { none: {} }, tickets: { none: {} } } });
   refresh();
   revalidatePath("/dashboard/library/folders");
 }

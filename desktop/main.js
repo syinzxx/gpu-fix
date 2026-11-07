@@ -14,6 +14,10 @@ const path = require("path");
 const fs = require("fs");
 const { createNexusBV, isAllowedSender } = require("./nexusbv");
 
+// The server uses this to keep the board library inside the PC app (lib/library/access.ts).
+// Set for the whole app before any window opens: a per-window setting did not always hold.
+app.userAgentFallback = `${app.userAgentFallback} GPUFixDesktop`;
+
 // Windows uses this to give the taskbar button and notifications the app's own icon.
 app.setAppUserModelId("com.gpufixshop.desktop");
 
@@ -62,8 +66,6 @@ function createMainWindow(url) {
     show: false,
   });
 
-  // The server uses this to keep the board library inside the PC app (lib/library/access.ts).
-  mainWindow.webContents.setUserAgent(`${mainWindow.webContents.getUserAgent()} GPUFixDesktop`);
   mainWindow.loadURL(url);
 
   mainWindow.once("ready-to-show", () => {

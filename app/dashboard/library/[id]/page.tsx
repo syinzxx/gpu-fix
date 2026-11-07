@@ -14,7 +14,8 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { Icon } from "@/components/icons";
 import { BoardInput, BoardOptions } from "@/components/library-picker";
 import { NexusBVPanel } from "@/components/nexusbv-panel";
-import { Badge, Button, Card, CardHeader, Input, Label, Textarea } from "@/components/ui";
+import { StaffStatusBadge } from "@/components/status-badge";
+import { Badge, Button, Card, CardHeader, EmptyState, Input, Label, Textarea } from "@/components/ui";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canOpenLibrary } from "@/lib/library/access";
@@ -22,6 +23,7 @@ import { choosePair } from "@/lib/library/pairing";
 import { loadBoardSummaries } from "@/lib/library/queries";
 import { boardTitle } from "@/lib/library/search";
 import { getT } from "@/lib/locale";
+import { fmtDate } from "@/lib/utils";
 import type { Translations } from "@/lib/i18n";
 
 const PICKER_ID = "library-boards";
@@ -46,6 +48,10 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
       include: {
         aliases: { orderBy: { alias: "asc" } },
         files: { include: { libraryRoot: true, _count: { select: { duplicates: true } } } },
+        tickets: {
+          orderBy: { createdAt: "desc" },
+          select: { id: true, code: true, issue: true, staffStatus: true, createdAt: true, customer: { select: { name: true } } },
+        },
       },
     }),
   ]);
@@ -133,6 +139,30 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
               ))}
             </ul>
             <p className="border-t border-slate-100 px-5 py-2.5 text-sm text-slate-500">{t.libFilesNote}</p>
+          </Card>
+
+          <Card>
+            <CardHeader title={`${t.libRepairHistory} (${board.tickets.length})`} />
+            {board.tickets.length === 0 ? (
+              <EmptyState message={t.libNoRepairs} />
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {board.tickets.map((ticket) => (
+                  <li key={ticket.id}>
+                    <Link href={`/dashboard/tickets/${ticket.id}`} className="block px-5 py-3 hover:bg-slate-50">
+                      <span className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-bold text-violet-700">{ticket.code}</span>
+                        <StaffStatusBadge status={ticket.staffStatus} />
+                      </span>
+                      <span className="block text-sm text-slate-700">{ticket.issue}</span>
+                      <span className="block text-xs text-slate-400">
+                        {fmtDate(ticket.createdAt)} · {ticket.customer.name}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
 

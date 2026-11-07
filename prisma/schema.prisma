@@ -78,9 +78,12 @@ model Ticket {
   ratedAt          DateTime?
   attachments      Attachment[]
   checklistItems   TicketChecklistItem[]
+  boardId          String? // the library board this repair was done on
+  board            Board?       @relation(fields: [boardId], references: [id], onDelete: SetNull)
 
   @@index([staffStatus])
   @@index([customerId])
+  @@index([boardId])
 }
 
 // Timeline entries: STATUS_CHANGE | NOTE | ASSIGNMENT | CREATED | PAYMENT
@@ -310,6 +313,7 @@ model Board {
   updatedAt      DateTime     @updatedAt
   aliases        BoardAlias[]
   files          BoardFile[]
+  tickets        Ticket[]
 
   @@index([gpuModel])
   @@index([cardBrand])

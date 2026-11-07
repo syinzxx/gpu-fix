@@ -3,13 +3,13 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export default async function proxy(req: NextRequest) {
+  // The session cookie name follows the connection, not the environment: a
+  // production server on the shop network runs over plain http.
+  const protocol = req.headers.get("x-forwarded-proto") ?? req.nextUrl.protocol.replace(":", "");
   const token = await getToken({
     req,
     secret: process.env.AUTH_SECRET,
-    // next-auth v5 cookie names
-    cookieName: process.env.NODE_ENV === "production"
-      ? "__Secure-authjs.session-token"
-      : "authjs.session-token",
+    secureCookie: protocol === "https",
   });
 
   const isLoggedIn = !!token;

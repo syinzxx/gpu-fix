@@ -190,6 +190,22 @@ export const translations = {
     logSentAt:         "Sent",
     filterAll:         "All",
 
+    // Account
+    passwordChange: "Change password",
+    passwordCurrent: "Current password",
+    passwordNew: "New password (8 or more characters)",
+    passwordRepeat: "New password again",
+    passwordChanged: "Password changed.",
+    passwordWrong: "The current password is not correct.",
+    passwordShort: "The new password needs 8 or more characters.",
+    passwordMismatch: "The two new passwords do not match.",
+    passwordSame: "The new password must be different from the current one.",
+
+    // Staff
+    staffDelete: "Delete",
+    staffDeleteConfirm: "Permanently delete this account?",
+    staffDeleteEffect: "This cannot be undone. Tickets they created move to you, assigned tickets become unassigned, and their name is removed from ticket history.",
+
     // Board library
     library: "Library",
     libraryDesc: "Find any board by any of its names.",
@@ -239,6 +255,25 @@ export const translations = {
     libReasonEmpty: "The file is empty.",
     libReasonGuess: "Only a V number in the name, so the brand is a guess.",
     libReasonNothing: "Nothing in the name identifies a board.",
+    libOpenBoth: "Open both",
+    libOpenBoard: "Open board",
+    libOpenPdf: "Open PDF",
+    libNoBoardview: "This board has no boardview yet.",
+    libNoPdf: "This board has no PDF yet.",
+    libJumpNet: "Jump to a net",
+    libJumpPart: "Jump to a part",
+    libPin: "Pin",
+    libGo: "Go",
+    libNexusWorking: "Working in NexusBV. Switching boards can take a few seconds.",
+    libNexusPaired: "Opened and paired in NexusBV.",
+    libNexusOpened: "Opened in NexusBV.",
+    libNexusSelected: "Selected in NexusBV:",
+    libNexusNotInstalled: "NexusBV was not found on this PC. Install it in the NexusBV 0.9 folder on the desktop.",
+    libNexusNotRunning: "NexusBV did not answer. Open it, load a board, and turn on Options, MCP, Enable AI/MCP control server.",
+    libNexusNotFound: "NexusBV could not find that on the open board. Check the name, and that this board is the one open.",
+    libNexusBadFile: "This file could not be found. Check that the drive or network folder is connected.",
+    libNexusFailed: "NexusBV could not do that. Try again.",
+    libNexusStillOpen: "NexusBV did not close. Finish or save your work there, close it, and try again.",
 
     // Hero / landing
     heroTitleLine1: "Expert GPU repair,",
@@ -653,6 +688,22 @@ export const translations = {
     logSentAt:         "أُرسلت",
     filterAll:         "الكل",
 
+    // الحساب
+    passwordChange: "تغيير كلمة المرور",
+    passwordCurrent: "كلمة المرور الحالية",
+    passwordNew: "كلمة المرور الجديدة (8 أحرف أو أكثر)",
+    passwordRepeat: "كلمة المرور الجديدة مرة أخرى",
+    passwordChanged: "تم تغيير كلمة المرور.",
+    passwordWrong: "كلمة المرور الحالية غير صحيحة.",
+    passwordShort: "يجب أن تتكون كلمة المرور الجديدة من 8 أحرف أو أكثر.",
+    passwordMismatch: "كلمتا المرور الجديدتان غير متطابقتين.",
+    passwordSame: "يجب أن تختلف كلمة المرور الجديدة عن الحالية.",
+
+    // الموظفون
+    staffDelete: "حذف",
+    staffDeleteConfirm: "حذف هذا الحساب نهائياً؟",
+    staffDeleteEffect: "لا يمكن التراجع عن ذلك. ستنتقل إليك التذاكر التي أنشأها، وستصبح التذاكر المسندة إليه بلا مسؤول، وسيُزال اسمه من سجل التذاكر.",
+
     // مكتبة اللوحات
     library: "المكتبة",
     libraryDesc: "ابحث عن أي لوحة بأي اسم من أسمائها.",
@@ -702,6 +753,25 @@ export const translations = {
     libReasonEmpty: "الملف فارغ.",
     libReasonGuess: "يوجد رقم V فقط في الاسم، لذا فالماركة مجرد تخمين.",
     libReasonNothing: "لا يوجد في الاسم ما يحدد اللوحة.",
+    libOpenBoth: "فتح الاثنين",
+    libOpenBoard: "فتح اللوحة",
+    libOpenPdf: "فتح PDF",
+    libNoBoardview: "لا يوجد Boardview لهذه اللوحة بعد.",
+    libNoPdf: "لا يوجد PDF لهذه اللوحة بعد.",
+    libJumpNet: "الانتقال إلى Net",
+    libJumpPart: "الانتقال إلى قطعة",
+    libPin: "الطرف",
+    libGo: "انتقال",
+    libNexusWorking: "جارٍ التنفيذ في NexusBV. قد يستغرق تبديل اللوحات بضع ثوانٍ.",
+    libNexusPaired: "تم الفتح والربط في NexusBV.",
+    libNexusOpened: "تم الفتح في NexusBV.",
+    libNexusSelected: "تم التحديد في NexusBV:",
+    libNexusNotInstalled: "لم يتم العثور على NexusBV في هذا الكمبيوتر. ثبّته في مجلد NexusBV 0.9 على سطح المكتب.",
+    libNexusNotRunning: "لم يستجب NexusBV. افتحه وحمّل لوحة، ثم فعّل Options ثم MCP ثم Enable AI/MCP control server.",
+    libNexusNotFound: "لم يجد NexusBV ذلك في اللوحة المفتوحة. تحقق من الاسم ومن أن هذه هي اللوحة المفتوحة.",
+    libNexusBadFile: "تعذر العثور على هذا الملف. تأكد من توصيل القرص أو مجلد الشبكة.",
+    libNexusFailed: "تعذر على NexusBV تنفيذ ذلك. حاول مرة أخرى.",
+    libNexusStillOpen: "لم يُغلق NexusBV. أنهِ عملك فيه أو احفظه، ثم أغلقه وحاول مرة أخرى.",
 
     // Hero / landing
     heroTitleLine1: "إصلاح احترافي لكروت الشاشة،",

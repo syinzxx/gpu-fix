@@ -7,19 +7,19 @@ async function main() {
   // --- Users ---
   const password = await bcrypt.hash("admin123", 10);
   const admin = await db.user.upsert({
-    where: { email: "admin@shop.com" },
+    where: { email: "admin@gpufix.com" },
     update: {},
-    create: { name: "Shop Owner", email: "admin@shop.com", passwordHash: password, role: "ADMIN" },
+    create: { name: "Shop Owner", email: "admin@gpufix.com", passwordHash: password, role: "ADMIN" },
   });
   await db.user.upsert({
-    where: { email: "reception@shop.com" },
+    where: { email: "reception@gpufix.com" },
     update: {},
-    create: { name: "Front Desk", email: "reception@shop.com", passwordHash: password, role: "RECEPTIONIST" },
+    create: { name: "Front Desk", email: "reception@gpufix.com", passwordHash: password, role: "RECEPTIONIST" },
   });
   const tech = await db.user.upsert({
-    where: { email: "tech@shop.com" },
+    where: { email: "tech@gpufix.com" },
     update: {},
-    create: { name: "Lead Technician", email: "tech@shop.com", passwordHash: password, role: "TECHNICIAN" },
+    create: { name: "Lead Technician", email: "tech@gpufix.com", passwordHash: password, role: "TECHNICIAN" },
   });
 
   // --- Supplier + parts ---
@@ -160,7 +160,7 @@ async function main() {
   }
 
   console.log("Seed complete. Logins (password: admin123):");
-  console.log("  admin@shop.com | reception@shop.com | tech@shop.com");
+  console.log("  admin@gpufix.com | reception@gpufix.com | tech@gpufix.com");
 }
 
 main()

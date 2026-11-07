@@ -14,3 +14,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
    */
   saveServerUrl: (url) => ipcRenderer.send("save-server-url", url),
 });
+
+/**
+ * NexusBV control for the board library. The main process refuses these unless
+ * the calling page is on the configured server address.
+ */
+contextBridge.exposeInMainWorld("nexusbv", {
+  open: (files) => ipcRenderer.invoke("nexusbv:open", files),
+  selectNet: (net) => ipcRenderer.invoke("nexusbv:select-net", net),
+  selectComponent: (refdes) => ipcRenderer.invoke("nexusbv:select-component", refdes),
+  selectPin: (refdes, pin) => ipcRenderer.invoke("nexusbv:select-pin", refdes, pin),
+  getState: () => ipcRenderer.invoke("nexusbv:state"),
+});

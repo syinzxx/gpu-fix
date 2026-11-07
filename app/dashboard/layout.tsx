@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { DashboardNav, type NavItem } from "@/components/dashboard-nav";
@@ -50,6 +51,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <p className="text-xs font-medium text-slate-400">
             {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
           </p>
+          <Link href="/dashboard/account" className="mt-2 block text-xs font-semibold text-slate-400 hover:text-slate-700">
+            {t.passwordChange}
+          </Link>
           <form
             action={async () => {
               "use server";

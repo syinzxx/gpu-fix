@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/library/*.test.ts",
+    "test": "tsx --test lib/library/*.test.ts desktop/*.test.js",
     "library:scan": "tsx scripts/library-scan.ts",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",

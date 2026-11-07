@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import { addBoardAlias, moveFileToBoard, removeBoardAlias, updateBoard } from "@/app/actions/library";
 import { Icon } from "@/components/icons";
 import { BoardInput, BoardOptions } from "@/components/library-picker";
+import { NexusBVPanel } from "@/components/nexusbv-panel";
 import { Badge, Button, Card, CardHeader, Input, Label, Textarea } from "@/components/ui";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canOpenLibrary } from "@/lib/library/access";
+import { choosePair } from "@/lib/library/pairing";
 import { loadBoardSummaries } from "@/lib/library/queries";
 import { boardTitle } from "@/lib/library/search";
 import { getT } from "@/lib/locale";
@@ -45,6 +47,10 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const files = board.files
     .filter((f) => !f.duplicateOfId)
     .sort((a, b) => TYPE_ORDER.indexOf(a.fileType) - TYPE_ORDER.indexOf(b.fileType) || a.originalName.localeCompare(b.originalName));
+  const openable = files
+    .filter((f) => f.status === "ACTIVE")
+    .map((f) => ({ path: path.win32.join(f.libraryRoot.path, f.relativePath), name: f.originalName, fileType: f.fileType }));
+  const pair = choosePair(openable);
   // File names stay searchable, but listing every copy here would bury the real names.
   const shownAliases = board.aliases.filter((a) => !/\.[a-z0-9]{2,5}$/i.test(a.alias));
   const save = updateBoard.bind(null, board.id);
@@ -114,6 +120,13 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="min-w-0 space-y-4">
+          <NexusBVPanel
+            boards={openable.filter((f) => f.fileType === "BOARDVIEW")}
+            pdfs={openable.filter((f) => f.fileType === "SCHEMATIC" || f.fileType === "BOARDVIEW_PDF")}
+            defaultBoard={pair.board?.path ?? null}
+            defaultPdf={pair.pdf?.path ?? null}
+            t={t}
+          />
           <Card>
             <CardHeader title={t.libAliases} />
             <div className="space-y-3 p-5">

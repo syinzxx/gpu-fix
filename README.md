@@ -16,9 +16,9 @@ npm run dev        # http://localhost:3000
 
 | Email | Role |
 |---|---|
-| `admin@shop.com` | Admin — everything, incl. staff management |
-| `reception@shop.com` | Receptionist — tickets, customers, inventory, invoices |
-| `tech@shop.com` | Technician — repairs, notes, parts |
+| `admin@gpufix.com` | Admin — everything, incl. staff management |
+| `reception@gpufix.com` | Receptionist — tickets, customers, inventory, invoices |
+| `tech@gpufix.com` | Technician — repairs, notes, parts |
 
 A demo ticket exists at [`/track/GPU-DEMO1`](http://localhost:3000/track/GPU-DEMO1).
 

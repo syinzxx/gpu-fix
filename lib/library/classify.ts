@@ -217,7 +217,7 @@ function findRevisionInFolders(folders: string[]): string | null {
 }
 
 /** The file name without copy markers and type words, so a board's PDF and CAD share one stem. */
-function comparableStem(stem: string): string {
+export function comparableStem(stem: string): string {
   return normalise(
     clean(stem)
       .replace(/\(COPY \d+\)|\(\d+\)|\bCOPY \d+\b/g, " ")

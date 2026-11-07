@@ -37,6 +37,24 @@ export async function toggleUserActive(formData: FormData) {
   revalidatePath("/dashboard/users");
 }
 
+/**
+ * A ticket must always have a creator, so those tickets move to the admin
+ * deleting the account. Other links (assigned tickets, history entries,
+ * payments) stay in place without a name, through the schema's SetNull.
+ */
+export async function deleteUser(formData: FormData) {
+  const admin = await requireRole("ADMIN");
+  const id = formData.get("id") as string;
+  if (id === admin.id) throw new Error("You cannot delete yourself");
+
+  await db.$transaction([
+    db.ticket.updateMany({ where: { createdById: id }, data: { createdById: admin.id } }),
+    db.user.delete({ where: { id } }),
+  ]);
+
+  revalidatePath("/dashboard/users");
+}
+
 export async function updateCustomer(formData: FormData) {
   await requireRole("ADMIN", "RECEPTIONIST");
   const id = formData.get("id") as string;

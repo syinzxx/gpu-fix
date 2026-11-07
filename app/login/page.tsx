@@ -58,7 +58,7 @@ export default async function LoginPage({
             <input type="hidden" name="callbackUrl" value={params.callbackUrl ?? ""} />
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required placeholder="you@shop.com" />
+              <Input id="email" name="email" type="email" required placeholder="you@gpufix.com" />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>

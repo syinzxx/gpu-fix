@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { createUser, toggleUserActive } from "@/app/actions/admin";
+import { createUser, deleteUser, toggleUserActive } from "@/app/actions/admin";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ROLES } from "@/lib/constants";
 import { Button, Input, Label, Select, Card, CardHeader, Table, Th, Td, Badge } from "@/components/ui";
 import { getT } from "@/lib/locale";
@@ -44,12 +45,24 @@ export default async function UsersPage() {
                     </Td>
                     <Td>
                       {u.id !== session.user.id && (
-                        <form action={toggleUserActive}>
-                          <input type="hidden" name="id" value={u.id} />
-                          <Button size="sm" variant={u.active ? "danger" : "secondary"} type="submit">
-                            {u.active ? t.disable : t.enable}
-                          </Button>
-                        </form>
+                        <div className="flex justify-end gap-1.5">
+                          <form action={toggleUserActive}>
+                            <input type="hidden" name="id" value={u.id} />
+                            <Button size="sm" variant={u.active ? "danger" : "secondary"} type="submit">
+                              {u.active ? t.disable : t.enable}
+                            </Button>
+                          </form>
+                          <form action={deleteUser}>
+                            <input type="hidden" name="id" value={u.id} />
+                            <ConfirmSubmitButton
+                              size="sm"
+                              variant="danger"
+                              confirmMessage={`${t.staffDeleteConfirm} ${u.name} (${u.email})\n\n${t.staffDeleteEffect}`}
+                            >
+                              {t.staffDelete}
+                            </ConfirmSubmitButton>
+                          </form>
+                        </div>
                       )}
                     </Td>
                   </tr>

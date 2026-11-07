@@ -12,6 +12,10 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { createNexusBV, isAllowedSender } = require("./nexusbv");
+
+// Windows uses this to give the taskbar button and notifications the app's own icon.
+app.setAppUserModelId("com.gpufixshop.desktop");
 
 // ---------------------------------------------------------------------------
 // Config persistence
@@ -262,6 +266,30 @@ ipcMain.on("save-server-url", (_event, url) => {
 });
 
 // ---------------------------------------------------------------------------
+// NexusBV
+// ---------------------------------------------------------------------------
+const nexusbv = createNexusBV({
+  getDir: () => loadConfig().nexusbvDir || path.join(app.getPath("desktop"), "NexusBV 0.9"),
+});
+
+function handleNexusBV(channel, run) {
+  ipcMain.handle(channel, async (event, ...args) => {
+    if (!isAllowedSender(event.senderFrame?.url, serverUrl)) return { ok: false, code: "NOT_ALLOWED" };
+    try {
+      return { ok: true, ...(await run(...args)) };
+    } catch (error) {
+      return { ok: false, code: error.code ?? "FAILED" };
+    }
+  });
+}
+
+handleNexusBV("nexusbv:open", (files) => nexusbv.open(files ?? {}));
+handleNexusBV("nexusbv:select-net", (net) => nexusbv.selectNet(String(net)));
+handleNexusBV("nexusbv:select-component", (refdes) => nexusbv.selectComponent(String(refdes)));
+handleNexusBV("nexusbv:select-pin", (refdes, pin) => nexusbv.selectPin(String(refdes), String(pin)));
+handleNexusBV("nexusbv:state", () => nexusbv.getState());
+
+// ---------------------------------------------------------------------------
 // App lifecycle
 // ---------------------------------------------------------------------------
 app.whenReady().then(() => {
@@ -294,4 +322,5 @@ app.on("activate", () => {
 app.on("before-quit", () => {
   app.isQuitting = true;
   stopPolling();
+  nexusbv.stop();
 });

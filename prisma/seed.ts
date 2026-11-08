@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -5,7 +6,9 @@ const db = new PrismaClient();
 
 async function main() {
   // --- Users ---
-  const password = await bcrypt.hash("admin123", 10);
+  // Never keep a real password in the repo. Set SEED_PASSWORD, or a random one is made and printed once.
+  const plain = process.env.SEED_PASSWORD || randomBytes(12).toString("base64url");
+  const password = await bcrypt.hash(plain, 10);
   const admin = await db.user.upsert({
     where: { email: "admin@gpufix.com" },
     update: {},
@@ -159,7 +162,7 @@ async function main() {
     });
   }
 
-  console.log("Seed complete. Logins (password: admin123):");
+  console.log(`Seed complete. Password for new accounts: ${process.env.SEED_PASSWORD ? "the SEED_PASSWORD value" : plain}`);
   console.log("  admin@gpufix.com | reception@gpufix.com | tech@gpufix.com");
 }
 

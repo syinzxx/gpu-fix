@@ -12,7 +12,7 @@ npm run db:seed    # seed staff accounts + sample parts
 npm run dev        # http://localhost:3000
 ```
 
-**Seeded logins** (password `admin123` for all):
+**Seeded logins.** The password comes from `SEED_PASSWORD` when it is set, otherwise the seed prints a random one. Change it after the first sign in:
 
 | Email | Role |
 |---|---|

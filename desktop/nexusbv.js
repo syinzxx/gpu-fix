@@ -59,6 +59,23 @@ function readReply(text) {
 
 const samePath = (a, b) => !!a && !!b && path.win32.normalize(a).toLowerCase() === path.win32.normalize(b).toLowerCase();
 
+/** Reads list_components lines such as `selected_refdes=U1 selected_info="..." ... nets=[A, B]`. */
+function parseCatalog(text) {
+  const parts = [];
+  for (const line of text.split(/\r?\n/)) {
+    const refdes = line.match(/selected_refdes=(\S+)/);
+    if (!refdes) continue;
+    const info = line.match(/selected_info="((?:[^"\\]|\\.)*)"/);
+    const nets = line.match(/nets=\[([^\]]*)\]/);
+    parts.push({
+      refdes: refdes[1],
+      info: info ? info[1] : "",
+      nets: nets ? nets[1].split(",").map((n) => n.trim()).filter(Boolean) : [],
+    });
+  }
+  return { parts, more: /More components available/i.test(text) };
+}
+
 function activeBoardPath(text) {
   return text.match(/^\s*Path:\s*(.+?)\s*$/m)?.[1] ?? null;
 }
@@ -147,11 +164,15 @@ function createNexusBV({ getDir, spawnProcess = spawn, processes = windowsProces
     return ready;
   }
 
-  async function callText(name, args = {}, timeoutMs) {
+  async function callContent(name, args = {}, timeoutMs) {
     await start();
     const reply = await request("tools/call", { name, arguments: args }, timeoutMs);
     if (reply.error) throw new NexusError("NOT_FOUND");
-    return (reply.result?.content ?? []).map((part) => part.text ?? "").join(" ");
+    return reply.result?.content ?? [];
+  }
+
+  async function callText(name, args = {}, timeoutMs) {
+    return (await callContent(name, args, timeoutMs)).map((part) => part.text ?? "").join(" ");
   }
 
   async function waitForBoard(file) {
@@ -234,6 +255,25 @@ function createNexusBV({ getDir, spawnProcess = spawn, processes = windowsProces
   const getState = () =>
     callText("get_board_state").then((text) => ({ ...readReply(text), board: activeBoardPath(text) }));
 
+  /** One page of the open board's parts, with their nets. */
+  async function listComponents(offset, limit = 40) {
+    const text = await callText("list_components", { offset, limit, include_nets: true }, REPLY_TIMEOUT_MS);
+    if (/failed to send command/i.test(text)) throw new NexusError("NOT_RUNNING");
+    if (!/^NEXUSBV_COMPONENT_CATALOG/.test(text.trim())) throw new NexusError("NOT_FOUND");
+    return parseCatalog(text);
+  }
+
+  /** A whole PDF page as an image, for OCR. */
+  async function renderPage(pdf, page) {
+    const content = await callContent("render_pdf_page_image", { pdf_path: pdf, page, image_mode: "page" }, EXTRACT_TIMEOUT_MS);
+    const image = content.find((part) => part.type === "image" && part.data);
+    if (!image) {
+      const text = content.map((part) => part.text ?? "").join(" ");
+      throw new NexusError(/failed to send command/i.test(text) ? "NOT_RUNNING" : "NOT_FOUND");
+    }
+    return { data: image.data, mimeType: image.mimeType ?? "image/png" };
+  }
+
   /** Reads a PDF's text by file path, without changing what NexusBV shows. */
   async function extractText(pdf, outputPath) {
     fs.rmSync(outputPath, { force: true });
@@ -253,7 +293,7 @@ function createNexusBV({ getDir, spawnProcess = spawn, processes = windowsProces
     running?.kill();
   }
 
-  return { open, selectNet, selectComponent, selectPin, getState, extractText, stop };
+  return { open, selectNet, selectComponent, selectPin, getState, extractText, listComponents, renderPage, stop };
 }
 
-module.exports = { NexusError, createNexusBV, isAllowedSender, openableFile, parseFields, readReply, activeBoardPath };
+module.exports = { NexusError, createNexusBV, isAllowedSender, openableFile, parseFields, parseCatalog, readReply, activeBoardPath };

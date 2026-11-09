@@ -206,6 +206,22 @@ export const translations = {
     staffDeleteConfirm: "Permanently delete this account?",
     staffDeleteEffect: "This cannot be undone. Tickets they created move to you, assigned tickets become unassigned, and their name is removed from ticket history.",
 
+    // Backups
+    backupTitle: "Backups",
+    backupDesc: "The shop database and ticket photos are copied once a day while the app runs, and the newest 30 copies are kept in each folder.",
+    backupMain: "Main copy",
+    backupMirror: "Second copy",
+    backupNewest: "Newest:",
+    backupNone: "No backup yet",
+    backupNow: "Back up now",
+    backupRunning: "Backing up",
+    backupDone: "Saved",
+    backupFailed: "The backup failed:",
+    backupMirrorFailed: "Could not copy to",
+    libPdfStarted: "PDFs are being read in the background. They become searchable over the next few minutes.",
+    libPdfRunning: "PDFs are waiting, and reading is already running.",
+    libPdfNexusClosed: "PDFs are waiting to be read. Open NexusBV with a board loaded, then press Rescan again.",
+
     // Board notes
     noteTitle: "Known faults and notes",
     noteEmpty: "No notes yet. Add what you learn at the bench.",
@@ -787,6 +803,22 @@ export const translations = {
     staffDelete: "حذف",
     staffDeleteConfirm: "حذف هذا الحساب نهائياً؟",
     staffDeleteEffect: "لا يمكن التراجع عن ذلك. ستنتقل إليك التذاكر التي أنشأها، وستصبح التذاكر المسندة إليه بلا مسؤول، وسيُزال اسمه من سجل التذاكر.",
+
+    // النسخ الاحتياطي
+    backupTitle: "النسخ الاحتياطي",
+    backupDesc: "تُنسخ قاعدة بيانات المحل وصور التذاكر مرة يومياً أثناء تشغيل البرنامج، ويُحتفظ بأحدث 30 نسخة في كل مجلد.",
+    backupMain: "النسخة الرئيسية",
+    backupMirror: "النسخة الثانية",
+    backupNewest: "الأحدث:",
+    backupNone: "لا توجد نسخة بعد",
+    backupNow: "نسخ احتياطي الآن",
+    backupRunning: "جارٍ النسخ",
+    backupDone: "تم الحفظ",
+    backupFailed: "فشل النسخ الاحتياطي:",
+    backupMirrorFailed: "تعذر النسخ إلى",
+    libPdfStarted: "ملف PDF تتم قراءتها في الخلفية. ستصبح قابلة للبحث خلال الدقائق القادمة.",
+    libPdfRunning: "ملف PDF في الانتظار، والقراءة تعمل بالفعل.",
+    libPdfNexusClosed: "ملف PDF في انتظار القراءة. افتح NexusBV مع تحميل لوحة، ثم اضغط إعادة الفحص مرة أخرى.",
 
     // ملاحظات اللوحة
     noteTitle: "الأعطال المعروفة والملاحظات",

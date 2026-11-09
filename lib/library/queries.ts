@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { db } from "@/lib/db";
-import { INDEX_PATH, findHashes, openIndex } from "./text-index";
+import { INDEX_PATH, findHashes, indexedHashes, openIndex } from "./text-index";
 import type { BoardSummary } from "./search";
 
 /** About 1,600 boards, small enough to search in memory with every alias. */
@@ -47,6 +47,22 @@ export async function boardsMentioning(query: string): Promise<Set<string>> {
       for (const file of files) boards.add(file.boardId as string);
     }
     return boards;
+  } finally {
+    index.close();
+  }
+}
+
+/** Library PDFs whose text has not been read yet. */
+export async function pdfsWaitingForText(): Promise<number> {
+  const files = await db.boardFile.findMany({
+    where: { status: "ACTIVE", duplicateOfId: null, sha256: { not: null }, fileType: { in: ["SCHEMATIC", "BOARDVIEW_PDF"] } },
+    select: { sha256: true }, // boardviews are read by a separate, longer job
+  });
+  if (!fs.existsSync(INDEX_PATH)) return files.length;
+  const index = openIndex();
+  try {
+    const done = indexedHashes(index);
+    return files.filter((f) => !done.has(f.sha256 as string)).length;
   } finally {
     index.close();
   }

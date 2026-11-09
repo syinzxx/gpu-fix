@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { extractTerms, indexedHashes, looksScanned, openIndex, saveFile, INDEX_PATH } from "../lib/library/text-index";
+import { LOCK_PATH, indexingRunning } from "../lib/library/index-runner";
 
 type Page = { text?: string };
 type Nexus = { extractText: (pdf: string, output: string) => Promise<{ pages?: Page[] } | null>; getState: () => Promise<unknown>; stop: () => void };
@@ -18,6 +19,11 @@ const require = createRequire(import.meta.url);
 const { createNexusBV } = require("../desktop/nexusbv.js") as { createNexusBV: (options: { getDir: () => string }) => Nexus };
 
 async function main() {
+  if (indexingRunning()) {
+    console.log("PDF reading is already running.");
+    return;
+  }
+  fs.writeFileSync(LOCK_PATH, String(process.pid));
   const prisma = new PrismaClient();
   const nexus = createNexusBV({ getDir: () => process.env.NEXUSBV_DIR ?? path.join(os.homedir(), "Desktop", "NexusBV 0.9") });
   const index = openIndex();
@@ -57,6 +63,7 @@ async function main() {
     console.log(JSON.stringify({ ...tally, minutes: Math.round((Date.now() - started) / 60000) }));
   } finally {
     fs.rmSync(scratch, { force: true });
+    fs.rmSync(LOCK_PATH, { force: true });
     nexus.stop();
     index.close();
     await prisma.$disconnect();

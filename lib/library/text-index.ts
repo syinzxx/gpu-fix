@@ -14,7 +14,8 @@ type SqliteModule = { DatabaseSync: new (file: string) => Database };
 export const INDEX_PATH = process.env.LIBRARY_SEARCH_DB ?? path.join(process.cwd(), "prisma", "library-search.db");
 const MAX_FILES = 3000;
 
-export type IndexStatus = "OK" | "SCANNED" | "FAILED";
+/** OK = PDF text, OCR = read from page images, PARTS = a boardview's parts and nets. */
+export type IndexStatus = "OK" | "OCR" | "PARTS" | "SCANNED" | "FAILED";
 
 export function openIndex(file = INDEX_PATH): Database {
   const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as unknown as SqliteModule;

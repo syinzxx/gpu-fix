@@ -10,6 +10,8 @@ import { requireLibraryAccess } from "@/lib/library/access";
 import { aliasesForModels, describeModel } from "@/lib/library/classify";
 import { CONDITIONS, MODES, POLARITIES, parseReading } from "@/lib/library/measurements";
 import { normalise } from "@/lib/library/normalise";
+import { indexingRunning, nexusRunning, startPdfIndexing } from "@/lib/library/index-runner";
+import { pdfsWaitingForText } from "@/lib/library/queries";
 import { scanLibrary, type ScanSummary } from "@/lib/library/scan";
 
 async function requireEditor() {
@@ -286,7 +288,18 @@ export async function removeLibraryFolder(rootId: string) {
   revalidatePath("/dashboard/library/folders");
 }
 
-export type RescanState = { summary?: ScanSummary; error?: boolean };
+export type PdfReading = "started" | "running" | "nexus-closed" | "none";
+export type RescanState = { summary?: ScanSummary; error?: boolean; pdfsWaiting?: number; pdfReading?: PdfReading };
+
+/** New PDFs become searchable only once NexusBV has read them. */
+async function readNewPdfs(): Promise<{ pdfsWaiting: number; pdfReading: PdfReading }> {
+  const pdfsWaiting = await pdfsWaitingForText();
+  if (!pdfsWaiting) return { pdfsWaiting, pdfReading: "none" };
+  if (indexingRunning()) return { pdfsWaiting, pdfReading: "running" };
+  if (!nexusRunning()) return { pdfsWaiting, pdfReading: "nexus-closed" };
+  startPdfIndexing();
+  return { pdfsWaiting, pdfReading: "started" };
+}
 
 export async function rescanLibrary(): Promise<RescanState> {
   await requireFolderAdmin();
@@ -295,7 +308,7 @@ export async function rescanLibrary(): Promise<RescanState> {
     const summary = await scanLibrary(db, roots);
     refresh();
     revalidatePath("/dashboard/library/folders");
-    return { summary };
+    return { summary, ...(await readNewPdfs()) };
   } catch {
     return { error: true };
   }

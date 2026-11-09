@@ -1,0 +1,67 @@
+  graphics_cards:
+    title: Graphics cards
+    hints:
+      - id: gpu_no_display
+        title: Graphics card with no display, checked in bench order
+        triggers:
+          - no display
+          - no video
+          - no signal
+          - black screen
+          - gpu no display
+          - card not detected
+          - not detected
+          - no post
+          - لا يوجد صورة
+          - لا توجد صورة
+        text: >
+          Work through these in order and stop at the first one that is wrong.
+          12V input from the PCIe slot and the external connectors (NVIDIA often
+          12V, PEX_12V; AMD often +12V_BUS, +12V_EXT_A). PCIe reset from the slot
+          (NVIDIA PEX_RST* or PEX_RST_BUF*; AMD PERST#, PERST#_BUF or PERSTB).
+          PCIe reference clock (NVIDIA PEX_REFCLK; AMD PCIE_REFCLKP and
+          PCIE_REFCLKN). GPU crystal (XTALIN or XTAL_IN; older AMD may use
+          XOUT_OSC). GPU core rail (NVIDIA NVVDD; AMD +VDDCR_GFX on newer cards,
+          +VDDC on older cards). Memory rail (NVIDIA FBVDDQ or FBVDD; AMD
+          +VDD_MEM or +MVDD). 1.8V (NVIDIA 1V8_AON, 1V8_MAIN, NP1V8 or 1V8; AMD
+          +1.8V). Memory reference (NVIDIA FB_VREF, GPU_FB_VREF or FBA_VREFC; AMD
+          VREFC_A or MVREF_A). Compare each reading with a known good card of the
+          same board revision, with the same probe polarity.
+
+      - id: gpu_rail_short
+        title: Short or low resistance on a GPU rail
+        triggers:
+          - short
+          - shorted
+          - low resistance
+          - rail short
+          - core short
+          - memory short
+          - 12v short
+          - قصر
+        text: >
+          Find which rail is low first, then where it is formed. For a core or
+          memory rail, check the power stage MOSFETs or DrMOS on that rail, then
+          the output capacitors, before suspecting the GPU or a memory chip. A
+          core rail normally reads low resistance compared with other rails, so
+          only call it shorted when it is well below a known good card of the
+          same board. For a 12V short, check the input MOSFETs, fuses and the
+          controller supply first.
+
+      - id: gpu_rail_missing
+        title: A GPU rail is missing although 12V is present
+        triggers:
+          - no core voltage
+          - missing nvvdd
+          - no nvvdd
+          - no vddc
+          - missing vddcr_gfx
+          - no fbvddq
+          - missing memory voltage
+          - rail missing
+        text: >
+          Check the controller for that rail: its supply, its enable signal and
+          its power good output, then the gate drive to the power stages. Many
+          cards bring rails up in a fixed order, so a missing early rail such as
+          1.8V can keep the core and memory rails off. Confirm the order on this
+          board in the schematic before replacing parts.

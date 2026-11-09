@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { test } = require("node:test");
-const { activeBoardPath, createNexusBV, isAllowedSender, openableFile, parseFields, readReply } = require("./nexusbv");
+const { activeBoardPath, createNexusBV, isAllowedSender, openableFile, parseCatalog, parseFields, readReply } = require("./nexusbv");
 
 test("only the configured app address may drive NexusBV", () => {
   assert.ok(isAllowedSender("http://shop-server:3000/dashboard/library/1", "http://shop-server:3000"));
@@ -63,7 +63,8 @@ function fakeNexus(dir, replyText) {
         write(line) {
           const message = JSON.parse(line);
           if (message.id === undefined) return;
-          const result = message.method === "initialize" ? {} : { content: [{ type: "text", text: replyText() }] };
+          const reply = message.method === "initialize" ? null : replyText(message);
+          const result = reply === null ? {} : { content: typeof reply === "string" ? [{ type: "text", text: reply }] : reply };
           setImmediate(() => proc.stdout.emit("data", JSON.stringify({ id: message.id, result }) + "\n"));
         },
       };
@@ -189,6 +190,34 @@ test("a closed NexusBV stops PDF reading with a clear code", async () => {
   const fake = fakeNexus(dir, () => "Failed to send command to NexusBV.");
   const nexus = createNexusBV({ getDir: () => dir, spawnProcess: fake.spawnProcess, processes: noWindows });
   await assert.rejects(nexus.extractText("D:\\a.pdf", path.join(dir, "text.json")), { code: "NOT_RUNNING" });
+  nexus.stop();
+  fs.rmSync(dir, { recursive: true });
+});
+
+test("a parts page is read into parts and nets", () => {
+  const page = [
+    "NEXUSBV_COMPONENT_CATALOG offset=0 limit=2 returned=2 total_matches=3413 total_components=3413 query=\"\"",
+    'selected_refdes=U2000 selected_info="GDDR6 BGA180" side=T pins=180 nets=[FBVDDQ, FBA_D0, GND] pins=[1,2,3]',
+    'selected_refdes=TP1 selected_info="1 TESTPAD" side=T pins=1 nets=[] pins=[1]',
+    "More components available: call list_components with offset=2",
+  ].join("\n");
+  const { parts, more } = parseCatalog(page);
+  assert.equal(more, true);
+  assert.deepEqual(parts[0], { refdes: "U2000", info: "GDDR6 BGA180", nets: ["FBVDDQ", "FBA_D0", "GND"] });
+  assert.deepEqual(parts[1].nets, []);
+  assert.equal(parseCatalog("NEXUSBV_COMPONENT_CATALOG returned=0").more, false);
+});
+
+test("a rendered page comes back as image data, and a text reply is refused", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nexusbv-"));
+  let mode = "image";
+  const fake = fakeNexus(dir, () =>
+    mode === "image" ? [{ type: "image", data: "aGVsbG8=", mimeType: "image/png" }] : "Failed to send command to NexusBV."
+  );
+  const nexus = createNexusBV({ getDir: () => dir, spawnProcess: fake.spawnProcess, processes: noWindows });
+  assert.deepEqual(await nexus.renderPage("D:\\a.pdf", 1), { data: "aGVsbG8=", mimeType: "image/png" });
+  mode = "closed";
+  await assert.rejects(nexus.renderPage("D:\\a.pdf", 1), { code: "NOT_RUNNING" });
   nexus.stop();
   fs.rmSync(dir, { recursive: true });
 });

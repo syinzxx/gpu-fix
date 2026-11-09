@@ -2,6 +2,8 @@ import { getSettings } from "@/lib/settings";
 import { saveSettings } from "@/app/actions/admin";
 import { getT } from "@/lib/locale";
 import { Button, Input, Label, Card, CardHeader } from "@/components/ui";
+import { BackupCard } from "@/components/backup-card";
+import { defaultOptions, listBackups } from "@/lib/backup";
 
 export default async function SettingsPage() {
   const [settings, t] = await Promise.all([getSettings(), getT()]);
@@ -14,6 +16,11 @@ export default async function SettingsPage() {
     NEXT_PUBLIC_APP_URL:      !!process.env.NEXT_PUBLIC_APP_URL,
   };
   const waOk = Object.values(waVars).every(Boolean);
+  const backupDirs = defaultOptions().dirs;
+  const recentBackups = backupDirs
+    .map((dir) => listBackups([dir])[0])
+    .filter(Boolean)
+    .map((b) => ({ dir: b.dir, name: b.name, bytes: b.bytes, at: b.at.toISOString() }));
   const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://your-domain.com"}/api/whatsapp/webhook`;
 
   return (
@@ -138,6 +145,8 @@ export default async function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      <BackupCard dirs={backupDirs} recent={recentBackups} t={t} />
     </div>
   );
 }

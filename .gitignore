@@ -57,6 +57,7 @@ desktop/dist/
 
 # private research: the GitHub repo is public, keep these on this PC only
 /prisma/library-search.db*
+/backups/
 /replica/
 /reports/
 /research_notes/

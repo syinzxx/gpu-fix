@@ -18,6 +18,11 @@ export function RescanButton({ t }: { t: Translations }) {
             ? `${t.libRescanDone} ${state.summary.newFiles} ${t.libRescanNew} · ${state.summary.missing} ${t.libRescanMissing} · ${state.summary.inbox} ${t.libRescanInbox}`
             : ""}
       </p>
+      {state.pdfReading && state.pdfReading !== "none" && (
+        <p className={state.pdfReading === "nexus-closed" ? "text-sm font-semibold text-amber-600" : "text-sm text-slate-600"}>
+          {state.pdfsWaiting} {state.pdfReading === "started" ? t.libPdfStarted : state.pdfReading === "running" ? t.libPdfRunning : t.libPdfNexusClosed}
+        </p>
+      )}
     </form>
   );
 }
